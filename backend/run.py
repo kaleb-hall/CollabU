@@ -1,6 +1,12 @@
 import os
 from app import create_app, db
 
+# Import all models so Flask-Migrate can detect them
+from app.models.user import User
+from app.models.project import Project
+from app.models.project_member import ProjectMember
+from app.models.task import Task
+
 # Get config from environment or use development
 config_name = os.environ.get('FLASK_ENV', 'development')
 app = create_app(config_name)
@@ -10,9 +16,10 @@ def make_shell_context():
     """Make database and models available in flask shell"""
     return {
         'db': db,
-        # Add your models here as you create them
-        # 'User': User,
-        # 'Project': Project,
+        'User': User,
+        'Project': Project,
+        'ProjectMember': ProjectMember,
+        'Task': Task,
     }
 
 if __name__ == '__main__':
