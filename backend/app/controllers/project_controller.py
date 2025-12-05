@@ -26,7 +26,7 @@ def create_project():
     POST /api/projects
     Body: { "title": "...", "description": "...", "deadline": "2025-12-31T23:59:59" }
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     
     try:
         data = project_create_schema.load(request.json)
@@ -50,7 +50,7 @@ def get_projects():
     Get all projects for current user
     GET /api/projects
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     projects = ProjectService.get_user_projects(current_user_id)
     
     return jsonify({
@@ -64,7 +64,7 @@ def get_project(project_id):
     Get project details
     GET /api/projects/<id>
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     project, error = ProjectService.get_project_by_id(project_id, current_user_id)
     
     if error:
@@ -83,7 +83,7 @@ def update_project(project_id):
     PUT /api/projects/<id>
     Body: { "title": "...", "description": "...", "deadline": "...", "status": "..." }
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     
     try:
         data = project_update_schema.load(request.json)
@@ -108,7 +108,7 @@ def delete_project(project_id):
     Delete a project
     DELETE /api/projects/<id>
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     success, error = ProjectService.delete_project(project_id, current_user_id)
     
     if error:
@@ -127,7 +127,7 @@ def add_member(project_id):
     POST /api/projects/<id>/members
     Body: { "user_id": 2, "role": "member" }
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     
     try:
         data = add_member_schema.load(request.json)
@@ -159,7 +159,7 @@ def remove_member(project_id, member_id):
     Remove a member from a project
     DELETE /api/projects/<id>/members/<member_id>
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert to int
     success, error = ProjectService.remove_member(project_id, current_user_id, member_id)
     
     if error:

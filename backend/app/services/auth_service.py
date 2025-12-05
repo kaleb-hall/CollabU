@@ -57,12 +57,13 @@ class AuthService:
         Generate JWT access and refresh tokens
         Returns: dict with access_token and refresh_token
         """
+        # Convert user_id to string for JWT subject
         access_token = create_access_token(
-            identity=user_id,
+            identity=str(user_id),
             expires_delta=timedelta(hours=1)
         )
         refresh_token = create_refresh_token(
-            identity=user_id,
+            identity=str(user_id),
             expires_delta=timedelta(days=30)
         )
         
@@ -74,4 +75,4 @@ class AuthService:
     @staticmethod
     def get_user_by_id(user_id):
         """Get user by ID"""
-        return User.query.get(user_id)
+        return User.query.get(int(user_id))

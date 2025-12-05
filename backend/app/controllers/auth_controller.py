@@ -79,7 +79,7 @@ def refresh():
     Headers: { "Authorization": "Bearer <refresh_token>" }
     """
     current_user_id = get_jwt_identity()
-    tokens = AuthService.generate_tokens(current_user_id)
+    tokens = AuthService.generate_tokens(int(current_user_id))
     
     return jsonify({
         'access_token': tokens['access_token']
@@ -111,11 +111,6 @@ def logout():
     POST /api/auth/logout
     Headers: { "Authorization": "Bearer <access_token>" }
     """
-    # In a more advanced implementation, you would:
-    # 1. Add token to a blacklist/blocklist in Redis
-    # 2. Revoke the token in the database
-    # For now, we'll just return success (client deletes token)
-    
     jti = get_jwt()['jti']  # JWT ID - unique identifier for the token
     
     return jsonify({
