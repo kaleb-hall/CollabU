@@ -8,9 +8,7 @@ import {
   FolderOpen, 
   CheckSquare, 
   Calendar, 
-  Plus,
   Clock,
-  Users,
   LogOut
 } from 'lucide-react';
 
@@ -57,7 +55,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-blue-100 to-teal-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading your workspace...</p>
@@ -141,13 +139,6 @@ export default function Dashboard() {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Active Projects</h2>
-              <button 
-                onClick={() => navigate('/projects/new')}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={20} />
-                New Project
-              </button>
             </div>
 
             {activeProjects.length === 0 ? (
@@ -157,14 +148,11 @@ export default function Dashboard() {
                   No projects yet
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Create your first project to get started!
+                  You don't have any projects yet. Create one using the backend API!
                 </p>
-                <button 
-                  onClick={() => navigate('/projects/new')}
-                  className="btn-primary"
-                >
-                  Create Project
-                </button>
+                <p className="text-sm text-gray-500">
+                  Run: <code className="bg-gray-100 px-2 py-1 rounded">./backend/test_tasks.sh</code>
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
