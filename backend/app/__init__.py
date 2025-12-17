@@ -34,6 +34,7 @@ def create_app(config_name='development'):
     from app.controllers.calendar_controller import calendar_bp
     from app.controllers.notification_controller import notification_bp
     from app.controllers.file_controller import file_bp
+    from app.controllers.deadline_controller import deadline_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/users')
@@ -42,6 +43,14 @@ def create_app(config_name='development'):
     app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(file_bp, url_prefix='/api/files')
+    app.register_blueprint(deadline_bp, url_prefix='/api/deadline')
+    
+    # Register custom commands (optional)
+    try:
+        from app import commands
+        commands.init_app(app)
+    except ImportError:
+        pass  # Commands are optional
     
     # Health check route
     @app.route('/api/health')
