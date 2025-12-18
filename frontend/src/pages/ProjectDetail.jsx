@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { projectService } from '../services/projectService';
 import { taskService } from '../services/taskService';
 import { userService } from '../services/userService';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,8 +86,13 @@ export default function ProjectDetail() {
       await taskService.updateTaskStatus(taskId, newStatus);
       toast.success('Task updated!');
       
+      // Update local state with current user info
       setTasks(tasks.map(t => 
-        t.id === taskId ? { ...t, status: newStatus } : t
+        t.id === taskId ? { 
+          ...t, 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        } : t
       ));
     } catch (error) {
       toast.error('Failed to update task');
@@ -107,30 +114,36 @@ export default function ProjectDetail() {
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
+  // Only show the 3 visible columns
   const tasksByStatus = {
     todo: tasks.filter(t => t.status === 'todo'),
     in_progress: tasks.filter(t => t.status === 'in_progress'),
-    review: tasks.filter(t => t.status === 'review'),
     completed: tasks.filter(t => t.status === 'completed'),
-    blocked: tasks.filter(t => t.status === 'blocked'),
   };
 
   const teamMembers = project.members || [];
 
+  // Generate recent activity with current user's name
   const recentActivity = tasks
     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
     .slice(0, 8)
-    .map(task => ({
-      text: task.status === 'completed' 
-        ? `${task.assignee?.first_name || 'Someone'} completed ${task.title}`
-        : task.status === 'in_progress'
-        ? `${task.assignee?.first_name || 'Someone'} started ${task.title}`
-        : `${task.assignee?.first_name || 'Someone'} updated ${task.title}`,
-      time: getRelativeTime(task.updated_at),
-      color: task.status === 'completed' ? 'teal' : 
-             task.status === 'in_progress' ? 'blue' :
-             task.status === 'review' ? 'purple' : 'gray'
-    }));
+    .map(task => {
+      const userName = task.assignee 
+        ? `${task.assignee.first_name}` 
+        : currentUser?.first_name || 'Someone';
+      
+      return {
+        text: task.status === 'completed' 
+          ? `${userName} completed ${task.title}`
+          : task.status === 'in_progress'
+          ? `${userName} started ${task.title}`
+          : `${userName} updated ${task.title}`,
+        time: getRelativeTime(task.updated_at),
+        color: task.status === 'completed' ? 'teal' : 
+               task.status === 'in_progress' ? 'blue' :
+               'gray'
+      };
+    });
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
@@ -230,24 +243,27 @@ export default function ProjectDetail() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <TaskColumn
                   title="To Do"
                   tasks={tasksByStatus.todo}
                   color="gray"
                   onStatusChange={updateTaskStatus}
+                  currentUser={currentUser}
                 />
                 <TaskColumn
                   title="In Progress"
                   tasks={tasksByStatus.in_progress}
                   color="blue"
                   onStatusChange={updateTaskStatus}
+                  currentUser={currentUser}
                 />
                 <TaskColumn
                   title="Completed"
                   tasks={tasksByStatus.completed}
                   color="teal"
                   onStatusChange={updateTaskStatus}
+                  currentUser={currentUser}
                 />
               </div>
             )}
@@ -344,13 +360,11 @@ export default function ProjectDetail() {
 }
 
 // Task Column Component
-function TaskColumn({ title, tasks, color, onStatusChange }) {
+function TaskColumn({ title, tasks, color, onStatusChange, currentUser }) {
   const colorClasses = {
     gray: 'bg-gray-400',
     blue: 'bg-blue-500',
     teal: 'bg-teal-500',
-    purple: 'bg-purple-500',
-    red: 'bg-red-500',
   };
 
   return (
@@ -365,6 +379,7 @@ function TaskColumn({ title, tasks, color, onStatusChange }) {
             key={task.id} 
             task={task}
             onStatusChange={onStatusChange}
+            currentUser={currentUser}
           />
         ))}
       </div>
@@ -372,8 +387,8 @@ function TaskColumn({ title, tasks, color, onStatusChange }) {
   );
 }
 
-// Task Card Component
-function TaskCard({ task, onStatusChange }) {
+// Task Card Component - Only show 3 status options
+function TaskCard({ task, onStatusChange, currentUser }) {
   const [showActions, setShowActions] = useState(false);
 
   const priorityColors = {
@@ -383,12 +398,11 @@ function TaskCard({ task, onStatusChange }) {
     low: 'border-green-500 bg-green-50',
   };
 
+  // Only the 3 visible statuses
   const statusOptions = [
     { value: 'todo', label: 'To Do' },
     { value: 'in_progress', label: 'In Progress' },
-    { value: 'review', label: 'Review' },
     { value: 'completed', label: 'Completed' },
-    { value: 'blocked', label: 'Blocked' },
   ];
 
   return (
@@ -480,7 +494,7 @@ function ActivityItem({ color, text, time }) {
   );
 }
 
-// Add Task Modal Component
+// Add Task Modal Component (same as before)
 function AddTaskModal({ projectId, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -613,7 +627,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
   );
 }
 
-// Add Member Modal Component
+// Add Member Modal Component (same as before - keeping for completeness)
 function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState([]);
@@ -644,7 +658,6 @@ function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
   const loadUsers = async () => {
     try {
       const response = await userService.getAllUsers();
-      // Filter out users who are already members
       const existingUserIds = existingMembers.map(m => m.user_id);
       const availableUsers = response.users.filter(u => !existingUserIds.includes(u.id));
       setAllUsers(availableUsers);
@@ -695,7 +708,6 @@ function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Search Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search Users
@@ -712,7 +724,6 @@ function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* User List */}
           <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
             {loading ? (
               <div className="p-4 text-center text-gray-600">Loading users...</div>
@@ -750,7 +761,6 @@ function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Role Selection */}
           {selectedUser && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
