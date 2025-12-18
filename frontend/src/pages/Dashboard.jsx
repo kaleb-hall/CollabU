@@ -91,6 +91,13 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-gray-900">CollabU</h1>
               <button
+                onClick={() => navigate('/calendar')}
+                className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+              >
+                <Calendar size={20} />
+                Calendar
+              </button>
+              <button
                 onClick={handleLogout}
                 className="text-gray-600 hover:text-red-600 transition-colors"
               >

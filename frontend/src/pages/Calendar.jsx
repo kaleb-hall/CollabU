@@ -28,6 +28,24 @@ const localizer = dateFnsLocalizer({
   },
 });
 
+// Helper functions defined outside component
+const getProjectColor = (projectId) => {
+  const colors = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981'];
+  return colors[projectId % colors.length];
+};
+
+const getBlockColor = (blockType) => {
+  const colors = {
+    busy: '#6b7280',
+    class: '#3b82f6',
+    work: '#14b8a6',
+    sleep: '#8b5cf6',
+    meeting: '#f59e0b',
+    other: '#6b7280',
+  };
+  return colors[blockType] || '#6b7280';
+};
+
 export default function Calendar() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -96,23 +114,6 @@ export default function Calendar() {
 
     return [...taskEvents, ...blockEvents];
   }, [myTasks, projects, calendarBlocks]);
-
-  const getProjectColor = (projectId) => {
-    const colors = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981'];
-    return colors[projectId % colors.length];
-  };
-
-  const getBlockColor = (blockType) => {
-    const colors = {
-      busy: '#6b7280',
-      class: '#3b82f6',
-      work: '#14b8a6',
-      sleep: '#8b5cf6',
-      meeting: '#f59e0b',
-      other: '#6b7280',
-    };
-    return colors[blockType] || '#6b7280';
-  };
 
   const handleSelectSlot = ({ start, end }) => {
     setSelectedDate(start);
