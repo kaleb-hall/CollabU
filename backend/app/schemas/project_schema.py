@@ -9,13 +9,11 @@ class ProjectSchema(Schema):
     deadline = fields.DateTime(required=True)
     status = fields.Str(dump_only=True)
     created_by = fields.Int(dump_only=True)
-    owner = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
-    
-    # Optional nested data
-    members = fields.List(fields.Nested('ProjectMemberSchema'), dump_only=True)
-    tasks = fields.List(fields.Nested('TaskSchema'), dump_only=True)
+    owner = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
+    members = fields.Nested('ProjectMemberSchema', many=True, dump_only=True)
+    tasks = fields.Nested('TaskSchema', many=True, dump_only=True)
 
 class ProjectCreateSchema(Schema):
     """Schema for creating a project"""
@@ -26,8 +24,16 @@ class ProjectCreateSchema(Schema):
     @validates_schema
     def validate_deadline(self, data, **kwargs):
         """Ensure deadline is in the future"""
-        if data.get('deadline') and data['deadline'] < datetime.utcnow():
-            raise ValidationError('Deadline must be in the future', 'deadline')
+        if data.get('deadline'):
+            # Make deadline timezone-naive for comparison
+            deadline = data['deadline']
+            if deadline.tzinfo is not None:
+                deadline = deadline.replace(tzinfo=None)
+            
+            now = datetime.utcnow()
+            
+            if deadline < now:
+                raise ValidationError('Deadline must be in the future', 'deadline')
 
 class ProjectUpdateSchema(Schema):
     """Schema for updating a project"""
@@ -38,9 +44,17 @@ class ProjectUpdateSchema(Schema):
     
     @validates_schema
     def validate_deadline(self, data, **kwargs):
-        """Ensure deadline is in the future if provided"""
-        if data.get('deadline') and data['deadline'] < datetime.utcnow():
-            raise ValidationError('Deadline must be in the future', 'deadline')
+        """Ensure deadline is in the future"""
+        if data.get('deadline'):
+            # Make deadline timezone-naive for comparison
+            deadline = data['deadline']
+            if deadline.tzinfo is not None:
+                deadline = deadline.replace(tzinfo=None)
+            
+            now = datetime.utcnow()
+            
+            if deadline < now:
+                raise ValidationError('Deadline must be in the future', 'deadline')
 
 class AddMemberSchema(Schema):
     """Schema for adding a member to a project"""

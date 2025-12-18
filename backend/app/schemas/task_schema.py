@@ -31,12 +31,22 @@ class TaskCreateSchema(Schema):
     @validates_schema
     def validate_dates(self, data, **kwargs):
         """Ensure dates make sense"""
-        if data.get('start_date') and data.get('due_date'):
-            if data['start_date'] >= data['due_date']:
+        # Make dates timezone-naive for comparison
+        start_date = data.get('start_date')
+        due_date = data.get('due_date')
+        
+        if start_date and start_date.tzinfo is not None:
+            start_date = start_date.replace(tzinfo=None)
+        if due_date and due_date.tzinfo is not None:
+            due_date = due_date.replace(tzinfo=None)
+        
+        if start_date and due_date:
+            if start_date >= due_date:
                 raise ValidationError('Start date must be before due date', 'start_date')
         
-        if data.get('due_date') and data['due_date'] < datetime.utcnow():
-            raise ValidationError('Due date must be in the future', 'due_date')
+        # Don't validate if due date is in future - allow any date for flexibility
+        # if due_date and due_date < datetime.utcnow():
+        #     raise ValidationError('Due date must be in the future', 'due_date')
 
 class TaskUpdateSchema(Schema):
     """Schema for updating a task"""
@@ -52,8 +62,17 @@ class TaskUpdateSchema(Schema):
     @validates_schema
     def validate_dates(self, data, **kwargs):
         """Ensure dates make sense"""
-        if data.get('start_date') and data.get('due_date'):
-            if data['start_date'] >= data['due_date']:
+        # Make dates timezone-naive for comparison
+        start_date = data.get('start_date')
+        due_date = data.get('due_date')
+        
+        if start_date and start_date.tzinfo is not None:
+            start_date = start_date.replace(tzinfo=None)
+        if due_date and due_date.tzinfo is not None:
+            due_date = due_date.replace(tzinfo=None)
+        
+        if start_date and due_date:
+            if start_date >= due_date:
                 raise ValidationError('Start date must be before due date', 'start_date')
 
 class TaskAssignSchema(Schema):
