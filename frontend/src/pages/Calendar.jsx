@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addHours, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addHours } from 'date-fns';
+import enUS from 'date-fns/locale/en-US';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { taskService } from '../services/taskService';
@@ -11,23 +12,20 @@ import {
   ArrowLeft,
   Plus,
   Clock,
-  Calendar as CalendarIcon,
   X,
   CheckSquare,
   Users
 } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-const locales = {
-  'en-US': require('date-fns/locale/en-US'),
-};
-
 const localizer = dateFnsLocalizer({
   format,
   parse,
   startOfWeek,
   getDay,
-  locales,
+  locales: {
+    'en-US': enUS,
+  },
 });
 
 export default function Calendar() {
