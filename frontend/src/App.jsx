@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProjectDetail from './pages/ProjectDetail';
+import Calendar from './pages/Calendar';
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProjectDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Calendar />
                 </ProtectedRoute>
               }
             />
