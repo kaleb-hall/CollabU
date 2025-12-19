@@ -31,11 +31,13 @@ def create_app():
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
     
     # Import and register blueprints
+    from app.controllers.auth_controller import auth_bp
     from app.controllers.user_controller import user_bp
     from app.controllers.project_controller import project_bp
     from app.controllers.task_controller import task_bp
     from app.controllers.calendar_controller import calendar_bp
     
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(project_bp, url_prefix='/api/projects')
     app.register_blueprint(task_bp, url_prefix='/api/tasks')

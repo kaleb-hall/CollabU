@@ -1,6 +1,15 @@
 from marshmallow import Schema, fields, validate, validates_schema, ValidationError
 from datetime import datetime
 
+class ProjectMemberSchema(Schema):
+    """Schema for project member output"""
+    id = fields.Int(dump_only=True)
+    project_id = fields.Int(dump_only=True)
+    user_id = fields.Int(dump_only=True)
+    role = fields.Str(dump_only=True)
+    joined_at = fields.DateTime(dump_only=True)
+    user = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
+
 class ProjectSchema(Schema):
     """Schema for project output"""
     id = fields.Int(dump_only=True)
@@ -12,7 +21,7 @@ class ProjectSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     owner = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
-    members = fields.Nested('ProjectMemberSchema', many=True, dump_only=True)
+    members = fields.Nested(ProjectMemberSchema, many=True, dump_only=True)
     tasks = fields.Nested('TaskSchema', many=True, dump_only=True)
 
 class ProjectCreateSchema(Schema):

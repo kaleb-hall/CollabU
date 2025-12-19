@@ -3,12 +3,17 @@ import api from './api';
 export const calendarService = {
   // Get all calendar blocks for current user
   getCalendarBlocks: async (startDate, endDate) => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    
-    const response = await api.get(`/calendar/blocks?${params.toString()}`);
-    return response.data;
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      
+      const response = await api.get(`/calendar/blocks?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching calendar blocks:', error);
+      return { blocks: [] }; // Return empty blocks on error
+    }
   },
 
   // Create calendar block

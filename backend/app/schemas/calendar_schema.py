@@ -10,8 +10,6 @@ class CalendarBlockSchema(Schema):
     start_time = fields.DateTime(required=True)
     end_time = fields.DateTime(required=True)
     block_type = fields.Str(dump_only=True)
-    is_recurring = fields.Bool(dump_only=True)
-    recurrence_rule = fields.Str(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -22,8 +20,6 @@ class CalendarBlockCreateSchema(Schema):
     start_time = fields.DateTime(required=True)
     end_time = fields.DateTime(required=True)
     block_type = fields.Str(validate=validate.OneOf(['busy', 'class', 'work', 'sleep', 'meeting', 'other']), missing='busy')
-    is_recurring = fields.Bool(missing=False)
-    recurrence_rule = fields.Str(allow_none=True)
     
     @validates_schema
     def validate_times(self, data, **kwargs):
@@ -38,8 +34,6 @@ class CalendarBlockUpdateSchema(Schema):
     start_time = fields.DateTime()
     end_time = fields.DateTime()
     block_type = fields.Str(validate=validate.OneOf(['busy', 'class', 'work', 'sleep', 'meeting', 'other']))
-    is_recurring = fields.Bool()
-    recurrence_rule = fields.Str(allow_none=True)
     
     @validates_schema
     def validate_times(self, data, **kwargs):

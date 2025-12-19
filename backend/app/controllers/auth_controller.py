@@ -1,118 +1,76 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from marshmallow import ValidationError
-from app.services.auth_service import AuthService
-from app.schemas.user_schema import UserSchema, UserRegistrationSchema, UserLoginSchema
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from app.models import User
+from app.schemas.user_schema import UserSchema, UserRegisterSchema, UserLoginSchema
+from app import db
 
 auth_bp = Blueprint('auth', __name__)
 
-# Initialize schemas
 user_schema = UserSchema()
-registration_schema = UserRegistrationSchema()
-login_schema = UserLoginSchema()
+user_register_schema = UserRegisterSchema()
+user_login_schema = UserLoginSchema()
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    """
-    Register a new user
-    POST /api/auth/register
-    Body: { "email": "...", "password": "...", "first_name": "...", "last_name": "..." }
-    """
+    """Register a new user"""
     try:
-        # Validate request data
-        data = registration_schema.load(request.json)
-    except ValidationError as err:
-        return jsonify({'error': 'Validation error', 'details': err.messages}), 400
+        data = user_register_schema.load(request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
     
-    # Register user
-    user, error = AuthService.register_user(data)
+    # Check if user already exists
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Email already registered'}), 400
     
-    if error:
-        status_code = 409 if error['code'] == 'EMAIL_EXISTS' else 500
-        return jsonify({'error': error['message']}), status_code
+    # Create new user
+    user = User(
+        email=data['email'],
+        first_name=data['first_name'],
+        last_name=data['last_name']
+    )
+    user.set_password(data['password'])
     
-    # Generate tokens
-    tokens = AuthService.generate_tokens(user.id)
+    db.session.add(user)
+    db.session.commit()
+    
+    # Create access token with user_id as STRING
+    access_token = create_access_token(identity=str(user.id))
     
     return jsonify({
-        'message': 'User registered successfully',
         'user': user_schema.dump(user),
-        'access_token': tokens['access_token'],
-        'refresh_token': tokens['refresh_token']
+        'access_token': access_token
     }), 201
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """
-    Login user
-    POST /api/auth/login
-    Body: { "email": "...", "password": "..." }
-    """
+    """Login user"""
     try:
-        # Validate request data
-        data = login_schema.load(request.json)
-    except ValidationError as err:
-        return jsonify({'error': 'Validation error', 'details': err.messages}), 400
+        data = user_login_schema.load(request.json)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
     
-    # Authenticate user
-    user, error = AuthService.authenticate_user(data['email'], data['password'])
+    # Find user
+    user = User.query.filter_by(email=data['email']).first()
     
-    if error:
-        return jsonify({'error': error['message']}), 401
+    if not user or not user.check_password(data['password']):
+        return jsonify({'error': 'Invalid email or password'}), 401
     
-    # Generate tokens
-    tokens = AuthService.generate_tokens(user.id)
+    # Create access token with user_id as STRING
+    access_token = create_access_token(identity=str(user.id))
     
     return jsonify({
-        'message': 'Login successful',
         'user': user_schema.dump(user),
-        'access_token': tokens['access_token'],
-        'refresh_token': tokens['refresh_token']
-    }), 200
-
-@auth_bp.route('/refresh', methods=['POST'])
-@jwt_required(refresh=True)
-def refresh():
-    """
-    Refresh access token
-    POST /api/auth/refresh
-    Headers: { "Authorization": "Bearer <refresh_token>" }
-    """
-    current_user_id = get_jwt_identity()
-    tokens = AuthService.generate_tokens(int(current_user_id))
-    
-    return jsonify({
-        'access_token': tokens['access_token']
+        'access_token': access_token
     }), 200
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
-    """
-    Get current authenticated user
-    GET /api/auth/me
-    Headers: { "Authorization": "Bearer <access_token>" }
-    """
-    current_user_id = get_jwt_identity()
-    user = AuthService.get_user_by_id(current_user_id)
+    """Get current user info"""
+    current_user_id = int(get_jwt_identity())  # Convert back to int
+    user = User.query.get(current_user_id)
     
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
-    return jsonify({
-        'user': user_schema.dump(user)
-    }), 200
-
-@auth_bp.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    """
-    Logout user (client should delete tokens)
-    POST /api/auth/logout
-    Headers: { "Authorization": "Bearer <access_token>" }
-    """
-    jti = get_jwt()['jti']  # JWT ID - unique identifier for the token
-    
-    return jsonify({
-        'message': 'Logout successful'
-    }), 200
+    return jsonify({'user': user_schema.dump(user)}), 200

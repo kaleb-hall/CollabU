@@ -20,7 +20,7 @@ calendar_block_update_schema = CalendarBlockUpdateSchema()
 @jwt_required()
 def get_calendar_blocks():
     """Get all calendar blocks for the current user"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     
     # Get query parameters for filtering
     start_date = request.args.get('start_date')
@@ -40,7 +40,7 @@ def get_calendar_blocks():
 @jwt_required()
 def get_calendar_block(block_id):
     """Get a specific calendar block"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     
     block = CalendarBlock.query.filter_by(id=block_id, user_id=current_user_id).first()
     if not block:
@@ -52,7 +52,7 @@ def get_calendar_block(block_id):
 @jwt_required()
 def create_calendar_block():
     """Create a new calendar block"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     
     try:
         data = calendar_block_create_schema.load(request.json)
@@ -75,9 +75,7 @@ def create_calendar_block():
         description=data.get('description'),
         start_time=data['start_time'],
         end_time=data['end_time'],
-        block_type=data.get('block_type', 'busy'),
-        is_recurring=data.get('is_recurring', False),
-        recurrence_rule=data.get('recurrence_rule')
+        block_type=data.get('block_type', 'busy')
     )
     
     db.session.add(block)
@@ -89,7 +87,7 @@ def create_calendar_block():
 @jwt_required()
 def update_calendar_block(block_id):
     """Update a calendar block"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     
     block = CalendarBlock.query.filter_by(id=block_id, user_id=current_user_id).first()
     if not block:
@@ -112,7 +110,7 @@ def update_calendar_block(block_id):
 @jwt_required()
 def delete_calendar_block(block_id):
     """Delete a calendar block"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     
     block = CalendarBlock.query.filter_by(id=block_id, user_id=current_user_id).first()
     if not block:
@@ -127,7 +125,7 @@ def delete_calendar_block(block_id):
 @jwt_required()
 def get_availability():
     """Get user availability for a time range"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')

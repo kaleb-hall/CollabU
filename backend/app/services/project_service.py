@@ -1,17 +1,10 @@
+from app.models import Project, ProjectMember, User
 from app import db
-from app.models.project import Project
-from app.models.project_member import ProjectMember
-from app.models.user import User
-from datetime import datetime
 
 class ProjectService:
-    
     @staticmethod
     def create_project(data, user_id):
-        """
-        Create a new project
-        Returns: (project, error)
-        """
+        """Create a new project"""
         try:
             project = Project(
                 title=data['title'],
@@ -21,205 +14,173 @@ class ProjectService:
             )
             
             db.session.add(project)
+            db.session.flush()
             
-            # Add creator as admin member
-            member = ProjectMember(
-                project=project,
+            # Add creator as admin
+            creator_member = ProjectMember(
+                project_id=project.id,
                 user_id=user_id,
                 role='admin'
             )
-            db.session.add(member)
-            
+            db.session.add(creator_member)
             db.session.commit()
-            return project, None
             
+            return project, None
         except Exception as e:
             db.session.rollback()
-            return None, {'message': 'Error creating project', 'details': str(e)}
+            return None, {'message': str(e)}
     
     @staticmethod
     def get_user_projects(user_id):
-        """Get all projects where user is a member"""
-        # Get project IDs where user is a member
-        member_project_ids = db.session.query(ProjectMember.project_id).filter_by(user_id=user_id).all()
-        member_project_ids = [pid[0] for pid in member_project_ids]
-        
-        # Get those projects
-        projects = Project.query.filter(Project.id.in_(member_project_ids)).all()
-        return projects
+        """Get all projects for a user"""
+        return Project.query.join(ProjectMember).filter(
+            ProjectMember.user_id == user_id
+        ).all()
     
     @staticmethod
     def get_project_by_id(project_id, user_id):
-        """
-        Get project by ID (only if user is a member)
-        Returns: (project, error)
-        """
+        """Get a specific project"""
         project = Project.query.get(project_id)
         
         if not project:
-            return None, {'message': 'Project not found', 'code': 'NOT_FOUND'}
+            return None, {'code': 'NOT_FOUND', 'message': 'Project not found'}
         
-        # Check if user is a member
-        is_member = ProjectMember.query.filter_by(
+        # Check if user has access
+        member = ProjectMember.query.filter_by(
             project_id=project_id,
             user_id=user_id
         ).first()
         
-        if not is_member:
-            return None, {'message': 'Access denied', 'code': 'FORBIDDEN'}
+        if not member:
+            return None, {'code': 'FORBIDDEN', 'message': 'Access denied'}
         
         return project, None
     
     @staticmethod
     def update_project(project_id, data, user_id):
-        """
-        Update a project (only owner or admin can update)
-        Returns: (project, error)
-        """
+        """Update a project"""
         project = Project.query.get(project_id)
         
         if not project:
-            return None, {'message': 'Project not found', 'code': 'NOT_FOUND'}
+            return None, {'code': 'NOT_FOUND', 'message': 'Project not found'}
         
-        # Check if user is owner or admin
+        # Check if user is admin
         member = ProjectMember.query.filter_by(
             project_id=project_id,
-            user_id=user_id
+            user_id=user_id,
+            role='admin'
         ).first()
         
-        if not member or (project.created_by != user_id and member.role != 'admin'):
-            return None, {'message': 'Access denied', 'code': 'FORBIDDEN'}
+        if not member:
+            return None, {'code': 'FORBIDDEN', 'message': 'Only admins can update projects'}
         
         try:
-            # Update fields
-            if 'title' in data:
-                project.title = data['title']
-            if 'description' in data:
-                project.description = data['description']
-            if 'deadline' in data:
-                project.deadline = data['deadline']
-            if 'status' in data:
-                project.status = data['status']
-            
-            project.updated_at = datetime.utcnow()
+            for key, value in data.items():
+                setattr(project, key, value)
             
             db.session.commit()
             return project, None
-            
         except Exception as e:
             db.session.rollback()
-            return None, {'message': 'Error updating project', 'details': str(e)}
+            return None, {'message': str(e)}
     
     @staticmethod
     def delete_project(project_id, user_id):
-        """
-        Delete a project (only owner can delete)
-        Returns: (success, error)
-        """
+        """Delete a project"""
         project = Project.query.get(project_id)
         
         if not project:
-            return False, {'message': 'Project not found', 'code': 'NOT_FOUND'}
+            return False, {'code': 'NOT_FOUND', 'message': 'Project not found'}
         
-        # Only owner can delete
-        if project.created_by != user_id:
-            return False, {'message': 'Only project owner can delete', 'code': 'FORBIDDEN'}
+        # Check if user is admin
+        member = ProjectMember.query.filter_by(
+            project_id=project_id,
+            user_id=user_id,
+            role='admin'
+        ).first()
+        
+        if not member:
+            return False, {'code': 'FORBIDDEN', 'message': 'Only admins can delete projects'}
         
         try:
             db.session.delete(project)
             db.session.commit()
             return True, None
-            
         except Exception as e:
             db.session.rollback()
-            return False, {'message': 'Error deleting project', 'details': str(e)}
+            return False, {'message': str(e)}
     
     @staticmethod
-    def add_member(project_id, user_id, new_member_user_id, role='member'):
-        """
-        Add a member to a project (only admin can add)
-        Returns: (member, error)
-        """
+    def add_member(project_id, current_user_id, new_user_id, role='member'):
+        """Add a member to a project"""
         project = Project.query.get(project_id)
         
         if not project:
-            return None, {'message': 'Project not found', 'code': 'NOT_FOUND'}
+            return None, {'code': 'NOT_FOUND', 'message': 'Project not found'}
         
-        # Check if requester is admin
-        requester = ProjectMember.query.filter_by(
+        # Check if current user is admin
+        admin = ProjectMember.query.filter_by(
             project_id=project_id,
-            user_id=user_id
+            user_id=current_user_id,
+            role='admin'
         ).first()
         
-        if not requester or requester.role != 'admin':
-            return None, {'message': 'Only admins can add members', 'code': 'FORBIDDEN'}
+        if not admin:
+            return None, {'code': 'FORBIDDEN', 'message': 'Only admins can add members'}
         
-        # Check if new member exists
-        new_user = User.query.get(new_member_user_id)
-        if not new_user:
-            return None, {'message': 'User not found', 'code': 'USER_NOT_FOUND'}
+        # Check if user exists
+        user = User.query.get(new_user_id)
+        if not user:
+            return None, {'code': 'USER_NOT_FOUND', 'message': 'User not found'}
         
         # Check if already a member
         existing = ProjectMember.query.filter_by(
             project_id=project_id,
-            user_id=new_member_user_id
+            user_id=new_user_id
         ).first()
         
         if existing:
-            return None, {'message': 'User is already a member', 'code': 'ALREADY_MEMBER'}
+            return None, {'code': 'ALREADY_MEMBER', 'message': 'User is already a member'}
         
         try:
             member = ProjectMember(
                 project_id=project_id,
-                user_id=new_member_user_id,
+                user_id=new_user_id,
                 role=role
             )
             db.session.add(member)
             db.session.commit()
             return member, None
-            
         except Exception as e:
             db.session.rollback()
-            return None, {'message': 'Error adding member', 'details': str(e)}
+            return None, {'message': str(e)}
     
     @staticmethod
-    def remove_member(project_id, user_id, member_user_id):
-        """
-        Remove a member from a project (only admin can remove, can't remove owner)
-        Returns: (success, error)
-        """
+    def remove_member(project_id, current_user_id, member_id):
+        """Remove a member from a project"""
         project = Project.query.get(project_id)
         
         if not project:
-            return False, {'message': 'Project not found', 'code': 'NOT_FOUND'}
+            return False, {'code': 'NOT_FOUND', 'message': 'Project not found'}
         
-        # Can't remove project owner
-        if project.created_by == member_user_id:
-            return False, {'message': 'Cannot remove project owner', 'code': 'FORBIDDEN'}
-        
-        # Check if requester is admin
-        requester = ProjectMember.query.filter_by(
+        # Check if current user is admin
+        admin = ProjectMember.query.filter_by(
             project_id=project_id,
-            user_id=user_id
+            user_id=current_user_id,
+            role='admin'
         ).first()
         
-        if not requester or requester.role != 'admin':
-            return False, {'message': 'Only admins can remove members', 'code': 'FORBIDDEN'}
+        if not admin:
+            return False, {'code': 'FORBIDDEN', 'message': 'Only admins can remove members'}
         
-        # Find member to remove
-        member = ProjectMember.query.filter_by(
-            project_id=project_id,
-            user_id=member_user_id
-        ).first()
-        
-        if not member:
-            return False, {'message': 'Member not found', 'code': 'NOT_FOUND'}
+        member = ProjectMember.query.get(member_id)
+        if not member or member.project_id != project_id:
+            return False, {'code': 'NOT_FOUND', 'message': 'Member not found'}
         
         try:
             db.session.delete(member)
             db.session.commit()
             return True, None
-            
         except Exception as e:
             db.session.rollback()
-            return False, {'message': 'Error removing member', 'details': str(e)}
+            return False, {'message': str(e)}
