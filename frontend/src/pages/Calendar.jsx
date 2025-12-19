@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addHours } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addHours, setHours, setMinutes } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -84,8 +84,33 @@ export default function Calendar() {
   const events = useMemo(() => {
     const taskEvents = myTasks.map(task => {
       const project = projects.find(p => p.id === task.project_id);
-      const startDate = task.start_date ? new Date(task.start_date) : new Date(task.due_date);
-      const endDate = new Date(task.due_date);
+      
+      // Parse the dates
+      let startDate, endDate;
+      
+      if (task.start_date) {
+        startDate = new Date(task.start_date);
+      } else {
+        // If no start date, show task on due date
+        const dueDate = new Date(task.due_date);
+        // Set to 9 AM on the due date
+        startDate = setHours(setMinutes(dueDate, 0), 9);
+      }
+      
+      const taskDueDate = new Date(task.due_date);
+      
+      // If the task has estimated hours, use that for the duration
+      if (task.estimated_hours) {
+        endDate = addHours(startDate, task.estimated_hours);
+      } else {
+        // Default to 2 hour block
+        endDate = addHours(startDate, 2);
+      }
+      
+      // Make sure end date is not before start date
+      if (endDate <= startDate) {
+        endDate = addHours(startDate, 1);
+      }
 
       return {
         id: `task-${task.id}`,
@@ -98,6 +123,7 @@ export default function Calendar() {
         color: getProjectColor(task.project_id),
         status: task.status,
         priority: task.priority,
+        allDay: false,
       };
     });
 
@@ -110,6 +136,7 @@ export default function Calendar() {
       data: block,
       color: getBlockColor(block.block_type),
       blockType: block.block_type,
+      allDay: false,
     }));
 
     return [...taskEvents, ...blockEvents];
@@ -137,10 +164,9 @@ export default function Calendar() {
     };
 
     if (event.type === 'block') {
-      style.opacity = 0.4;
-      style.border = `2px dashed ${event.color}`;
-      style.backgroundColor = 'transparent';
-      style.color = event.color;
+      style.opacity = 0.7;
+      style.border = `2px solid ${event.color}`;
+      style.backgroundColor = event.color;
     }
 
     return { style };
@@ -209,6 +235,10 @@ export default function Calendar() {
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
                 defaultView="week"
+                step={30}
+                timeslots={2}
+                min={setHours(setMinutes(new Date(), 0), 6)}
+                max={setHours(setMinutes(new Date(), 0), 23)}
               />
             </div>
           </div>
@@ -236,19 +266,19 @@ export default function Calendar() {
                 <div className="pt-3 border-t">
                   <p className="text-sm font-semibold text-gray-700 mb-2">Busy Times</p>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 rounded border-2 border-dashed border-blue-500" />
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3b82f6' }} />
                     <span className="text-sm text-gray-600">Class</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 rounded border-2 border-dashed border-teal-500" />
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#14b8a6' }} />
                     <span className="text-sm text-gray-600">Work</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 rounded border-2 border-dashed border-purple-500" />
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#8b5cf6' }} />
                     <span className="text-sm text-gray-600">Sleep</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded border-2 border-dashed border-gray-500" />
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6b7280' }} />
                     <span className="text-sm text-gray-600">Other</span>
                   </div>
                 </div>
@@ -391,10 +421,10 @@ function EventDetailModal({ event, onClose, onDelete }) {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Due Date</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">Scheduled Time</p>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Clock size={16} />
-                  <span>{event.end.toLocaleString()}</span>
+                  <span>{event.start.toLocaleString()} - {event.end.toLocaleTimeString()}</span>
                 </div>
               </div>
 
