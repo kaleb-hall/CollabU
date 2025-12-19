@@ -10,7 +10,16 @@ import {
   Calendar, 
   Clock,
   LogOut,
-  Plus
+  Plus,
+  Lightbulb,
+  Code,
+  FileText,
+  Presentation,
+  Users,
+  FlaskConical,
+  BookOpen,
+  Video,
+  LayoutGrid
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -281,8 +290,10 @@ function UpcomingTaskCard({ task }) {
   );
 }
 
-// Add Project Modal
+// Add Project Modal with Template Selector
 function AddProjectModal({ onClose, onSuccess }) {
+  const [step, setStep] = useState(1);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -290,90 +301,276 @@ function AddProjectModal({ onClose, onSuccess }) {
   });
   const [loading, setLoading] = useState(false);
 
+  const templates = [
+    {
+      id: 'custom',
+      name: 'Blank Project',
+      description: 'Start from scratch with no pre-made tasks',
+      icon: LayoutGrid,
+      color: 'gray',
+      estimatedHours: 0
+    },
+    {
+      id: 'research_paper',
+      name: 'Research Paper',
+      description: 'Essay, thesis, academic paper, or report',
+      icon: FileText,
+      color: 'blue',
+      estimatedHours: 44
+    },
+    {
+      id: 'software_project',
+      name: 'Software Project',
+      description: 'App, website, or coding project',
+      icon: Code,
+      color: 'purple',
+      estimatedHours: 77
+    },
+    {
+      id: 'presentation',
+      name: 'Presentation',
+      description: 'Slide deck, pitch, or demo',
+      icon: Presentation,
+      color: 'teal',
+      estimatedHours: 26
+    },
+    {
+      id: 'group_project',
+      name: 'Group Project',
+      description: 'Team collaboration project',
+      icon: Users,
+      color: 'orange',
+      estimatedHours: 36
+    },
+    {
+      id: 'lab_experiment',
+      name: 'Lab Report',
+      description: 'Experiment and lab report',
+      icon: FlaskConical,
+      color: 'green',
+      estimatedHours: 21
+    },
+    {
+      id: 'study_guide',
+      name: 'Exam Prep',
+      description: 'Study for test, midterm, or final',
+      icon: BookOpen,
+      color: 'red',
+      estimatedHours: 38
+    },
+    {
+      id: 'video_project',
+      name: 'Video Project',
+      description: 'Film, documentary, or recording',
+      icon: Video,
+      color: 'pink',
+      estimatedHours: 40
+    },
+  ];
+
+  const handleTemplateSelect = (template) => {
+    setSelectedTemplate(template);
+    setStep(2);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await projectService.createProject({
+      const autoGenerate = selectedTemplate?.id !== 'custom';
+      
+      console.log('Submitting project:', {
         ...formData,
         deadline: new Date(formData.deadline).toISOString(),
+        auto_generate_tasks: autoGenerate
+      });
+
+      const response = await projectService.createProject({
+        ...formData,
+        deadline: new Date(formData.deadline).toISOString(),
+        auto_generate_tasks: autoGenerate
       });
       
-      toast.success('Project created successfully!');
+      console.log('Project created:', response);
+      
+      toast.success(
+        autoGenerate 
+          ? `Project created with AI-generated tasks! 🎉`
+          : 'Project created successfully!'
+      );
       onSuccess();
     } catch (error) {
       console.error('Error creating project:', error);
-      toast.error('Failed to create project');
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || 'Failed to create project');
     } finally {
       setLoading(false);
     }
   };
 
+  const colorClasses = {
+    gray: 'bg-gray-100 border-gray-300 hover:border-gray-400 hover:bg-gray-200',
+    blue: 'bg-blue-50 border-blue-200 hover:border-blue-400 hover:bg-blue-100',
+    purple: 'bg-purple-50 border-purple-200 hover:border-purple-400 hover:bg-purple-100',
+    teal: 'bg-teal-50 border-teal-200 hover:border-teal-400 hover:bg-teal-100',
+    orange: 'bg-orange-50 border-orange-200 hover:border-orange-400 hover:bg-orange-100',
+    green: 'bg-green-50 border-green-200 hover:border-green-400 hover:bg-green-100',
+    red: 'bg-red-50 border-red-200 hover:border-red-400 hover:bg-red-100',
+    pink: 'bg-pink-50 border-pink-200 hover:border-pink-400 hover:bg-pink-100',
+  };
+
+  const iconColorClasses = {
+    gray: 'text-gray-600',
+    blue: 'text-blue-600',
+    purple: 'text-purple-600',
+    teal: 'text-teal-600',
+    orange: 'text-orange-600',
+    green: 'text-green-600',
+    red: 'text-red-600',
+    pink: 'text-pink-600',
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Project</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Project Title *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Enter project title"
-            />
-          </div>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
+        {step === 1 ? (
+          <>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Create New Project</h2>
+            <p className="text-gray-600 mb-6">Choose a template or start from scratch</p>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description *
-            </label>
-            <textarea
-              required
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Enter project description"
-              rows="4"
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {templates.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => handleTemplateSelect(template)}
+                    className={`p-6 border-2 rounded-xl text-left transition-all ${colorClasses[template.color]}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-lg ${template.color === 'gray' ? 'bg-gray-200' : `bg-${template.color}-100`}`}>
+                        <Icon className={iconColorClasses[template.color]} size={24} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 mb-1">{template.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                        {template.estimatedHours > 0 && (
+                          <p className="text-xs text-gray-500">
+                            ~{template.estimatedHours}h of work
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Deadline *
-            </label>
-            <input
-              type="datetime-local"
-              required
-              value={formData.deadline}
-              onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            />
-          </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={onClose}
+                className="px-6 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => setStep(1)}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                ← Back
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Project Details</h2>
+                <p className="text-sm text-gray-600">
+                  Template: <span className="font-semibold">{selectedTemplate?.name}</span>
+                </p>
+              </div>
+            </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
-            >
-              {loading ? 'Creating...' : 'Create Project'}
-            </button>
-          </div>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="e.g., Final Research Paper"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description *
+                </label>
+                <textarea
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Describe your project..."
+                  rows="4"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deadline *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              {selectedTemplate?.id !== 'custom' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                    <div>
+                      <p className="text-sm font-semibold text-blue-900 mb-1">
+                        AI Task Generation Enabled
+                      </p>
+                      <p className="text-xs text-blue-700">
+                        CollabU will automatically create {selectedTemplate?.estimatedHours > 0 ? `~${selectedTemplate.estimatedHours}h of ` : ''}tasks 
+                        based on the {selectedTemplate?.name} template. You can edit or delete them after creation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                >
+                  {loading ? 'Creating...' : 'Create Project'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

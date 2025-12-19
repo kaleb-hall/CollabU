@@ -1,10 +1,12 @@
-from app.models import Project, ProjectMember, User
+from app.models import Project, ProjectMember, Task, User
+from app.services.ai_task_generator import AITaskGenerator
 from app import db
+from datetime import datetime
 
 class ProjectService:
     @staticmethod
-    def create_project(data, user_id):
-        """Create a new project"""
+    def create_project(data, user_id, auto_generate_tasks=False):
+        """Create a new project with optional AI task generation"""
         try:
             project = Project(
                 title=data['title'],
@@ -23,12 +25,65 @@ class ProjectService:
                 role='admin'
             )
             db.session.add(creator_member)
+            
+            # AI Task Generation
+            suggested_tasks = None
+            if auto_generate_tasks:
+                task_data = AITaskGenerator.generate_tasks(
+                    project.title,
+                    project.description or '',
+                    project.deadline,
+                    auto_create=True
+                )
+                
+                # Create the suggested tasks
+                for task_info in task_data['tasks']:
+                    task = Task(
+                        project_id=project.id,
+                        title=task_info['title'],
+                        description=task_info['description'],
+                        due_date=datetime.fromisoformat(task_info['due_date'].replace('Z', '')),
+                        estimated_hours=task_info['estimated_hours'],
+                        priority=task_info['priority'],
+                        status='todo'
+                    )
+                    db.session.add(task)
+                
+                suggested_tasks = task_data
+            
             db.session.commit()
             
-            return project, None
+            return project, suggested_tasks, None
         except Exception as e:
             db.session.rollback()
-            return None, {'message': str(e)}
+            return None, None, {'message': str(e)}
+    
+    @staticmethod
+    def get_task_suggestions(project_id, user_id):
+        """Get AI task suggestions for an existing project"""
+        project = Project.query.get(project_id)
+        
+        if not project:
+            return None, {'code': 'NOT_FOUND', 'message': 'Project not found'}
+        
+        # Check if user has access
+        member = ProjectMember.query.filter_by(
+            project_id=project_id,
+            user_id=user_id
+        ).first()
+        
+        if not member:
+            return None, {'code': 'FORBIDDEN', 'message': 'Access denied'}
+        
+        # Generate suggestions
+        suggestions = AITaskGenerator.generate_tasks(
+            project.title,
+            project.description or '',
+            project.deadline,
+            auto_create=False
+        )
+        
+        return suggestions, None
     
     @staticmethod
     def get_user_projects(user_id):

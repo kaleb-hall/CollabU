@@ -4,6 +4,7 @@ import { projectService } from '../services/projectService';
 import { taskService } from '../services/taskService';
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
+import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -15,7 +16,8 @@ import {
   Clock,
   UserPlus,
   Search,
-  X
+  X,
+  Edit2
 } from 'lucide-react';
 
 export default function ProjectDetail() {
@@ -27,6 +29,8 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true);
   const [calculatingSchedule, setCalculatingSchedule] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showEditTask, setShowEditTask] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [showAddMember, setShowAddMember] = useState(false);
 
   useEffect(() => {
@@ -86,7 +90,6 @@ export default function ProjectDetail() {
       await taskService.updateTaskStatus(taskId, newStatus);
       toast.success('Task updated!');
       
-      // Update local state with current user info
       setTasks(tasks.map(t => 
         t.id === taskId ? { 
           ...t, 
@@ -97,6 +100,11 @@ export default function ProjectDetail() {
     } catch (error) {
       toast.error('Failed to update task');
     }
+  };
+
+  const handleEditTask = (task) => {
+    setSelectedTask(task);
+    setShowEditTask(true);
   };
 
   if (loading) {
@@ -114,7 +122,6 @@ export default function ProjectDetail() {
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // Only show the 3 visible columns
   const tasksByStatus = {
     todo: tasks.filter(t => t.status === 'todo'),
     in_progress: tasks.filter(t => t.status === 'in_progress'),
@@ -123,7 +130,6 @@ export default function ProjectDetail() {
 
   const teamMembers = project.members || [];
 
-  // Generate recent activity with current user's name
   const recentActivity = tasks
     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
     .slice(0, 8)
@@ -249,6 +255,7 @@ export default function ProjectDetail() {
                   tasks={tasksByStatus.todo}
                   color="gray"
                   onStatusChange={updateTaskStatus}
+                  onEditTask={handleEditTask}
                   currentUser={currentUser}
                 />
                 <TaskColumn
@@ -256,6 +263,7 @@ export default function ProjectDetail() {
                   tasks={tasksByStatus.in_progress}
                   color="blue"
                   onStatusChange={updateTaskStatus}
+                  onEditTask={handleEditTask}
                   currentUser={currentUser}
                 />
                 <TaskColumn
@@ -263,6 +271,7 @@ export default function ProjectDetail() {
                   tasks={tasksByStatus.completed}
                   color="teal"
                   onStatusChange={updateTaskStatus}
+                  onEditTask={handleEditTask}
                   currentUser={currentUser}
                 />
               </div>
@@ -343,6 +352,22 @@ export default function ProjectDetail() {
         />
       )}
 
+      {/* Edit Task Modal */}
+      {showEditTask && selectedTask && (
+        <EditTaskModal
+          task={selectedTask}
+          onClose={() => {
+            setShowEditTask(false);
+            setSelectedTask(null);
+          }}
+          onSuccess={() => {
+            setShowEditTask(false);
+            setSelectedTask(null);
+            loadProjectData();
+          }}
+        />
+      )}
+
       {/* Add Member Modal */}
       {showAddMember && (
         <AddMemberModal
@@ -360,7 +385,7 @@ export default function ProjectDetail() {
 }
 
 // Task Column Component
-function TaskColumn({ title, tasks, color, onStatusChange, currentUser }) {
+function TaskColumn({ title, tasks, color, onStatusChange, onEditTask, currentUser }) {
   const colorClasses = {
     gray: 'bg-gray-400',
     blue: 'bg-blue-500',
@@ -379,6 +404,7 @@ function TaskColumn({ title, tasks, color, onStatusChange, currentUser }) {
             key={task.id} 
             task={task}
             onStatusChange={onStatusChange}
+            onEditTask={onEditTask}
             currentUser={currentUser}
           />
         ))}
@@ -387,8 +413,8 @@ function TaskColumn({ title, tasks, color, onStatusChange, currentUser }) {
   );
 }
 
-// Task Card Component - Only show 3 status options
-function TaskCard({ task, onStatusChange, currentUser }) {
+// Task Card Component
+function TaskCard({ task, onStatusChange, onEditTask, currentUser }) {
   const [showActions, setShowActions] = useState(false);
 
   const priorityColors = {
@@ -398,7 +424,6 @@ function TaskCard({ task, onStatusChange, currentUser }) {
     low: 'border-green-500 bg-green-50',
   };
 
-  // Only the 3 visible statuses
   const statusOptions = [
     { value: 'todo', label: 'To Do' },
     { value: 'in_progress', label: 'In Progress' },
@@ -407,10 +432,22 @@ function TaskCard({ task, onStatusChange, currentUser }) {
 
   return (
     <div 
-      className={`bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all border-l-4 ${priorityColors[task.priority]} cursor-pointer`}
+      className={`bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all border-l-4 ${priorityColors[task.priority]} cursor-pointer relative group`}
       onClick={() => setShowActions(!showActions)}
     >
-      <h4 className="font-semibold text-gray-900 mb-2">{task.title}</h4>
+      {/* Edit button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onEditTask(task);
+        }}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-100 rounded-lg"
+        title="Edit task"
+      >
+        <Edit2 size={16} className="text-gray-600" />
+      </button>
+
+      <h4 className="font-semibold text-gray-900 mb-2 pr-8">{task.title}</h4>
       
       {task.description && (
         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.description}</p>
@@ -494,7 +531,7 @@ function ActivityItem({ color, text, time }) {
   );
 }
 
-// Add Task Modal Component (same as before)
+// Add Task Modal Component
 function AddTaskModal({ projectId, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -627,7 +664,137 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
   );
 }
 
-// Add Member Modal Component (same as before - keeping for completeness)
+// Edit Task Modal Component
+function EditTaskModal({ task, onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    title: task.title || '',
+    description: task.description || '',
+    due_date: task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd'T'HH:mm") : '',
+    estimated_hours: task.estimated_hours || '',
+    priority: task.priority || 'medium',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await taskService.updateTask(task.id, {
+        ...formData,
+        due_date: new Date(formData.due_date).toISOString(),
+        estimated_hours: parseFloat(formData.estimated_hours) || null,
+      });
+      
+      toast.success('Task updated successfully!');
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('Failed to update task');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Task</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Task Title *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              rows="3"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Due Date *
+              </label>
+              <input
+                type="datetime-local"
+                required
+                value={formData.due_date}
+                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estimated Hours
+              </label>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                value={formData.estimated_hours}
+                onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Priority
+            </label>
+            <select
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+            >
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Add Member Modal Component (keeping from before)
 function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState([]);
