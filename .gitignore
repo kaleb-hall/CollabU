@@ -1,8 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+*.db
+*.sqlite*
+instance/
+
+# Environment
 .env
 .env.local
+
+# IDE
 .vscode/
 .idea/
 .DS_Store
-*.log
-*.sqlite
-*.db
+
+# Frontend
+frontend/node_modules/
+frontend/build/
+frontend/dist/

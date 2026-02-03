@@ -2,54 +2,56 @@ import os
 from datetime import timedelta
 
 class Config:
-    """Base configuration"""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    """Base configuration with security-first approach"""
+    
+    # Security - NEVER use weak fallbacks in production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        # Only for development - generates new key each restart
+        import secrets
+        SECRET_KEY = secrets.token_hex(32)
+        print("⚠️  WARNING: Using generated SECRET_KEY. Set SECRET_KEY in .env for production!")
+    
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    if not JWT_SECRET_KEY:
+        # Only for development - generates new key each restart
+        import secrets
+        JWT_SECRET_KEY = secrets.token_hex(32)
+        print("⚠️  WARNING: Using generated JWT_SECRET_KEY. Set JWT_SECRET_KEY in .env for production!")
+    
+    # Database - use environment variable
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'postgresql://localhost/collabu_dev'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # JWT Configuration
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    # JWT Config
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+        seconds=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 3600))
+    )
     
-    # Mail Configuration
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@collabu.com')
-    
-    # CORS
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
-
+    # Additional security headers
+    JSON_SORT_KEYS = False
 
 class DevelopmentConfig(Config):
-    """Development configuration"""
+    """Development-specific settings"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///collabu_dev.db'
-
+    TESTING = False
 
 class ProductionConfig(Config):
-    """Production configuration"""
+    """Production-specific settings"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    TESTING = False
     
-    # Additional production settings
-    SQLALCHEMY_POOL_SIZE = 10
-    SQLALCHEMY_POOL_RECYCLE = 3600
-
+    @classmethod
+    def validate(cls):
+        """Ensure required production configs are set"""
+        required = ['SECRET_KEY', 'JWT_SECRET_KEY', 'DATABASE_URL']
+        missing = [key for key in required if not os.environ.get(key)]
+        if missing:
+            raise ValueError(f"Production requires: {', '.join(missing)}")
 
 class TestingConfig(Config):
-    """Testing configuration"""
+    """Testing-specific settings"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///collabu_test.db'
-    WTF_CSRF_ENABLED = False
-
-
-# Config dictionary
-config = {
-    'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'testing': TestingConfig,
-    'default': DevelopmentConfig
-}
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
