@@ -167,12 +167,6 @@ CollabU/
 - [x] Deadline scheduling algorithm
 - [x] Calendar blocking for availability
 - [x] React frontend with dashboard, project detail, and calendar views
-- [ ] Real-time notifications (WebSocket)
-- [ ] File attachments and Google Drive integration
-- [ ] Activity feed across projects
-- [ ] Email notifications for approaching deadlines
-- [ ] Task dependency visualization
-- [ ] Mobile-responsive improvements
 
 ## Documentation
 

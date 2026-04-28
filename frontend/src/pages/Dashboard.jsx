@@ -396,7 +396,7 @@ function AddProjectModal({ onClose, onSuccess }) {
       
       toast.success(
         autoGenerate 
-          ? `Project created with AI-generated tasks! 🎉`
+          ? `Project created with AI-generated tasks!`
           : 'Project created successfully!'
       );
       onSuccess();

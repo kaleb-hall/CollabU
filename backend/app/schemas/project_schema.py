@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate, validates_schema, ValidationError
+from marshmallow import Schema, fields, validate, validates_schema, ValidationError, EXCLUDE
 from datetime import datetime
 
 class ProjectMemberSchema(Schema):
@@ -26,6 +26,9 @@ class ProjectSchema(Schema):
 
 class ProjectCreateSchema(Schema):
     """Schema for creating a project"""
+    class Meta:
+        unknown = EXCLUDE
+
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     description = fields.Str(allow_none=True)
     deadline = fields.DateTime(required=True)
@@ -69,3 +72,4 @@ class AddMemberSchema(Schema):
     """Schema for adding a member to a project"""
     user_id = fields.Int(required=True)
     role = fields.Str(validate=validate.OneOf(['admin', 'member', 'viewer']), missing='member')
+
