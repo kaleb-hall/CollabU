@@ -75,7 +75,17 @@ Update project fields. *(Protected, owner only)*
 Delete a project and all associated data. *(Protected, owner only)*
 
 ### POST `/api/projects/<id>/members`
-Add a team member by email. *(Protected, owner only)*
+Add a team member by user ID. *(Protected, owner only)*
+
+**Request Body:**
+```json
+{
+  "user_id": 2,
+  "role": "member"
+}
+```
+
+Roles: `admin`, `member`, `viewer` (defaults to `member`).
 
 ### DELETE `/api/projects/<id>/members/<user_id>`
 Remove a team member. *(Protected, owner only)*

@@ -105,7 +105,7 @@ All endpoints return JSON. Protected routes require `Authorization: Bearer <toke
 | GET | `/api/projects/` | List user's projects |
 | POST | `/api/projects/` | Create project |
 | GET | `/api/projects/:id` | Project details + members + tasks |
-| POST | `/api/projects/:id/members` | Add team member |
+| POST | `/api/projects/:id/members` | Add team member by user ID |
 | GET | `/api/tasks/my` | Tasks assigned to current user |
 | POST | `/api/tasks/` | Create task |
 | PUT | `/api/tasks/:id` | Update task status/details |

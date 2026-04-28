@@ -161,14 +161,29 @@ def calculate_schedule(project_id):
     """Calculate optimal task schedule"""
     current_user_id = int(get_jwt_identity())
     
-    # Import the deadline algorithm
-    from app.utils.deadline_algorithm import DeadlineAlgorithm
+    # Verify user is a member of the project
+    from app.models.project_member import ProjectMember
+    member = ProjectMember.query.filter_by(
+        project_id=project_id,
+        user_id=current_user_id
+    ).first()
     
-    algorithm = DeadlineAlgorithm()
-    result, error = algorithm.calculate_schedule(project_id, current_user_id)
+    if not member:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    from app.services.deadline_service import DeadlineService
+    schedule, warnings, error = DeadlineService.calculate_task_schedule(project_id)
     
     if error:
-        status_code = 404 if error.get('code') == 'NOT_FOUND' else 403
+        status_code = 404 if error.get('code') == 'NOT_FOUND' else 500
         return jsonify({'error': error['message']}), status_code
     
-    return jsonify(result), 200
+    response = {
+        'message': 'Schedule calculated successfully',
+        'schedule': schedule
+    }
+    
+    if warnings:
+        response['warnings'] = warnings
+    
+    return jsonify(response), 200
