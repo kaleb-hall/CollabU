@@ -4,14 +4,14 @@ from flask_jwt_extended import jwt_required
 from app import db
 from app.errors import NotFound
 from app.models import User
-from app.schemas.user_schema import UserSchema, UserRegisterSchema, UserLoginSchema
+from app.schemas.user_schema import MeSchema, UserLoginSchema, UserRegisterSchema
 from app.services import auth_service
 from app.utils.auth import current_user_id
 from app.utils.request_data import load_json
 
 auth_bp = Blueprint('auth', __name__)
 
-user_schema = UserSchema()
+user_schema = MeSchema()
 
 
 def auth_response(user, status):
