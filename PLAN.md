@@ -293,6 +293,8 @@ Too much for one phase, so I split it. Each part ends with a stop for your OK.
 
 **Dashboard checkpoint (branch `phase-3-design`, waiting for feedback):** Tailwind v4, tokens with a contrast test for both themes, fonts, sonner, Base UI header (menu, popover) and dialog, and the redesigned dashboard. 125 frontend tests. Dashboard first load is 193.7 kB gzipped (phase 1 ended at 117.1 kB); most of the difference is Base UI and its positioning library. motion's full build is kept off the dashboard and saved for the kanban board.
 
+**Dashboard round 2 (after your "still looks AI" feedback):** rebuilt after researching Atlassian's and Google's redesigns. App frame with a project sidebar (collapsible), search and Create in the top bar, Ctrl/Cmd+K command menu, phone bottom bar with a projects drawer. Home is now My work (grouped Late, Today, Next 7 days, Later, check off in place with Undo) beside a compact project list. 14px body text, flat surfaces, serif only for the wordmark and page titles, status labels. 132 frontend tests.
+
 **Order after your dashboard feedback:** login/register, project detail (kanban, task panel, activity, files, workload), calendar, notifications, settings, invite pages, command menu.
 
 ---
