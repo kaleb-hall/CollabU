@@ -6,7 +6,7 @@ from app import db
 from app.errors import Conflict, NotFound
 from app.models import Project, ProjectMember, Task, User
 from app.schemas.task_schema import TASK_STATUSES
-from app.services import activity_service, task_templates
+from app.services import activity_service, notification_service, task_templates
 
 
 def create_project(data, user_id, auto_generate_tasks=False, template=None):
@@ -101,6 +101,11 @@ def add_member(project, user_id, role='member'):
     member = ProjectMember(project_id=project.id, user_id=user_id, role=role)
     db.session.add(member)
     activity_service.log(project.id, user_id, 'member_joined', 'joined the project', 'member', user_id)
+    if project.created_by != user_id:
+        joiner = db.session.get(User, user_id)
+        notification_service.notify(project.created_by, 'team',
+                                    f'{activity_service.full_name(joiner)} joined {project.title}',
+                                    link=notification_service.project_link(project.id))
     db.session.commit()
     return member
 

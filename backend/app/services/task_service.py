@@ -4,7 +4,7 @@ from app import db
 from app.errors import ValidationFailed
 from app.models import ProjectMember, Task, User
 from app.schemas.task_schema import STATUS_LABELS
-from app.services import activity_service
+from app.services import activity_service, notification_service
 from app.utils.time import utcnow
 
 
@@ -29,6 +29,8 @@ def create_task(project, data, actor_id):
     db.session.add(task)
     db.session.flush()
     activity_service.log(project.id, actor_id, 'task_created', f'created "{task.title}"', 'task', task.id)
+    if task.assigned_to:
+        notify_assignee(task, actor_id)
     db.session.commit()
     return task
 
@@ -57,12 +59,23 @@ def update_task(task, data, actor_id):
 def on_status_changed(task, actor_id):
     activity_service.log(task.project_id, actor_id, 'task_moved',
                          f'moved "{task.title}" to {STATUS_LABELS[task.status]}', 'task', task.id)
+    if task.status == 'review' and task.created_by and task.created_by != actor_id:
+        notification_service.notify(task.created_by, 'review', f'"{task.title}" is ready for review',
+                                    link=notification_service.project_link(task.project_id))
 
 
 def on_assigned(task, actor_id):
     assignee = db.session.get(User, task.assigned_to)
     activity_service.log(task.project_id, actor_id, 'task_assigned',
                          f'assigned "{task.title}" to {activity_service.full_name(assignee)}', 'task', task.id)
+    notify_assignee(task, actor_id)
+
+
+def notify_assignee(task, actor_id):
+    if task.assigned_to != actor_id:
+        notification_service.notify(task.assigned_to, 'assignment', f'You were assigned "{task.title}"',
+                                    message=task.project.title,
+                                    link=notification_service.project_link(task.project_id))
 
 
 def delete_task(task):
