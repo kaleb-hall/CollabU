@@ -218,6 +218,14 @@ Too much for one phase, so I split it. Each part ends with a stop for your OK.
    - Comment model, list (oldest first, newest at the bottom), add, delete own. Project admins can also delete? **[ASK]** You said "owner can delete their own". I will do only that unless you say otherwise.
    - Shows in a task detail panel (which also gives the kanban card somewhere to open to).
 
+### Phase 2A results (done, branch `phase-2a-collab`, built on `phase-1-audit`)
+
+- Backend tests 82 to 130, frontend tests 21 to 43, lint clean.
+- Checked by hand in the browser: invite email printed in the terminal, new person registered from the link and joined, comment posted, owner's bell showed "joined" and "ready for review", mark all read cleared it.
+- Pulled forward from 2B: the browser timezone is saved on the user at login, because the digest email needs local times.
+- "A task I own is due in 24 hours" means a task assigned to me.
+- Not logged or notified on purpose: tasks created from a template, and assignments made by Calculate schedule (they would flood the feed and the bell).
+
 ### 2B. Planning tools
 
 6. **File attachments**
