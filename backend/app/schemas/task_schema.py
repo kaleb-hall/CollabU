@@ -4,6 +4,9 @@ from app.schemas.fields import UtcDateTime
 from app.schemas.user_schema import UserSchema
 
 TASK_STATUSES = ['todo', 'in_progress', 'review', 'blocked', 'completed']
+STATUS_LABELS = {
+    'todo': 'To Do', 'in_progress': 'In Progress', 'review': 'Review', 'blocked': 'Blocked', 'completed': 'Completed',
+}
 TASK_PRIORITIES = ['low', 'medium', 'high', 'urgent']
 
 

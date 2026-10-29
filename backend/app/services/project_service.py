@@ -6,7 +6,7 @@ from app import db
 from app.errors import Conflict, NotFound
 from app.models import Project, ProjectMember, Task, User
 from app.schemas.task_schema import TASK_STATUSES
-from app.services import task_templates
+from app.services import activity_service, task_templates
 
 
 def create_project(data, user_id, auto_generate_tasks=False, template=None):
@@ -26,6 +26,7 @@ def create_project(data, user_id, auto_generate_tasks=False, template=None):
         for suggestion in suggestions['tasks']:
             db.session.add(Task(
                 project_id=project.id,
+                created_by=user_id,
                 title=suggestion['title'],
                 description=suggestion['description'],
                 due_date=suggestion['due_date'],
@@ -99,6 +100,7 @@ def add_member(project, user_id, role='member'):
         raise Conflict('That person is already a member')
     member = ProjectMember(project_id=project.id, user_id=user_id, role=role)
     db.session.add(member)
+    activity_service.log(project.id, user_id, 'member_joined', 'joined the project', 'member', user_id)
     db.session.commit()
     return member
 

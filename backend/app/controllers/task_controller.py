@@ -17,7 +17,7 @@ my_tasks_schema = MyTaskSchema(many=True)
 @task_bp.route('/project/<int:project_id>', methods=['POST'])
 @project_access()
 def create_task(project):
-    task = task_service.create_task(project, load_json(TaskCreateSchema()))
+    task = task_service.create_task(project, load_json(TaskCreateSchema()), current_user_id())
     return jsonify({'task': task_schema.dump(task)}), 201
 
 
@@ -42,14 +42,14 @@ def get_task(project, task):
 @task_bp.route('/<int:task_id>', methods=['PUT'])
 @project_access()
 def update_task(project, task):
-    task = task_service.update_task(task, load_json(TaskUpdateSchema()))
+    task = task_service.update_task(task, load_json(TaskUpdateSchema()), current_user_id())
     return jsonify({'task': task_schema.dump(task)}), 200
 
 
 @task_bp.route('/<int:task_id>/status', methods=['PUT'])
 @project_access()
 def update_task_status(project, task):
-    task = task_service.update_task(task, load_json(TaskStatusUpdateSchema()))
+    task = task_service.update_task(task, load_json(TaskStatusUpdateSchema()), current_user_id())
     return jsonify({'task': task_schema.dump(task)}), 200
 
 

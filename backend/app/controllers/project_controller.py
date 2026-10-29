@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
+from app.schemas.activity_schema import ActivitySchema
 from app.schemas.project_schema import (
     AddMemberSchema,
     ProjectCreateSchema,
@@ -10,8 +11,10 @@ from app.schemas.project_schema import (
     ScheduleRequestSchema,
     TaskSummarySchema,
 )
-from app.services import deadline_service, project_service, task_templates
+from app.models import Activity
+from app.services import activity_service, deadline_service, project_service, task_templates
 from app.utils.auth import current_user_id
+from app.utils.pagination import PageArgsSchema, paginate
 from app.utils.permissions import project_access
 from app.utils.request_data import load_json
 
@@ -100,3 +103,11 @@ def calculate_schedule(project):
     data = ScheduleRequestSchema().load(request.get_json(silent=True) or {})
     schedule, warnings = deadline_service.calculate_task_schedule(project, data['timezone'])
     return jsonify({'schedule': schedule, 'warnings': warnings}), 200
+
+
+@project_bp.route('/<int:project_id>/activity', methods=['GET'])
+@project_access()
+def list_activity(project):
+    args = PageArgsSchema().load(request.args)
+    activities, next_cursor = paginate(activity_service.feed_query(project), Activity, args)
+    return jsonify({'activities': ActivitySchema(many=True).dump(activities), 'next_cursor': next_cursor}), 200

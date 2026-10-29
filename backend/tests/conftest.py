@@ -78,3 +78,16 @@ def count_queries(app):
     def counter():
         return QueryCounter(db.engine)
     return counter
+
+
+def join_project(project_id, user_id, role='member'):
+    """Add a member directly through the service (invites are tested separately)."""
+    from app.models import Project
+    from app.services import project_service
+    return project_service.add_member(db.session.get(Project, project_id), user_id, role)
+
+
+def get_json(client, url, headers):
+    response = client.get(url, headers=headers)
+    assert response.status_code == 200, response.get_json()
+    return response.get_json()
