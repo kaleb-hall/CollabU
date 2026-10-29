@@ -235,3 +235,9 @@ class DeadlineService:
         # - "Move Task X from Alice to Bob to balance workload"
         # - "Task Y should start earlier to meet deadline"
         pass
+
+
+def calculate_task_schedule(project):
+    """Temporary adapter until the algorithm is rewritten later in phase 1."""
+    schedule, warnings, _ = DeadlineService.calculate_task_schedule(project.id)
+    return schedule, warnings or []

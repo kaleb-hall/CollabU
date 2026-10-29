@@ -14,7 +14,7 @@ def test_create_list_update_delete_task(client):
     assert response.get_json()['task']['title'] == 'Full outline'
 
     assert client.get(f"/api/tasks/{task['id']}", headers=headers).status_code == 200
-    assert client.delete(f"/api/tasks/{task['id']}", headers=headers).status_code == 200
+    assert client.delete(f"/api/tasks/{task['id']}", headers=headers).status_code == 204
     assert client.get(f"/api/tasks/{task['id']}", headers=headers).status_code == 404
 
 

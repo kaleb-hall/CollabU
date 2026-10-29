@@ -1,57 +1,69 @@
 import os
 from datetime import timedelta
 
+DEV_SECRET = 'dev-only-secret-not-for-production'
+
+
+def database_url(default):
+    """Read DATABASE_URL, fixing Render's postgres:// prefix for SQLAlchemy."""
+    url = os.environ.get('DATABASE_URL', default)
+    if url.startswith('postgres://'):
+        url = url.replace('postgres://', 'postgresql://', 1)
+    return url
+
+
+def cors_origins():
+    raw = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
+    return [origin.strip() for origin in raw.split(',') if origin.strip()]
+
+
 class Config:
-    """Base configuration with security-first approach"""
-    
-    # Security - NEVER use weak fallbacks in production
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    if not SECRET_KEY:
-        # Only for development - generates new key each restart
-        import secrets
-        SECRET_KEY = secrets.token_hex(32)
-        print("⚠️  WARNING: Using generated SECRET_KEY. Set SECRET_KEY in .env for production!")
-    
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
-    if not JWT_SECRET_KEY:
-        # Only for development - generates new key each restart
-        import secrets
-        JWT_SECRET_KEY = secrets.token_hex(32)
-        print("⚠️  WARNING: Using generated JWT_SECRET_KEY. Set JWT_SECRET_KEY in .env for production!")
-    
-    # Database - use environment variable
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://localhost/collabu_dev'
-    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # JWT Config
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
-        seconds=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 3600))
-    )
-    
-    # Additional security headers
     JSON_SORT_KEYS = False
+    REQUIRED_ENV = []
+
+    @classmethod
+    def load(cls):
+        missing = [key for key in cls.REQUIRED_ENV if not os.environ.get(key)]
+        if missing:
+            raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
+        return {
+            'SECRET_KEY': os.environ.get('SECRET_KEY', DEV_SECRET),
+            'JWT_SECRET_KEY': os.environ.get('JWT_SECRET_KEY', DEV_SECRET),
+            'JWT_ACCESS_TOKEN_EXPIRES': timedelta(seconds=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 3600))),
+            'SQLALCHEMY_DATABASE_URI': cls.database_uri(),
+            'SQLALCHEMY_TRACK_MODIFICATIONS': cls.SQLALCHEMY_TRACK_MODIFICATIONS,
+            'JSON_SORT_KEYS': cls.JSON_SORT_KEYS,
+            'CORS_ORIGINS': cors_origins(),
+            'TESTING': cls is TestingConfig,
+        }
+
+    @classmethod
+    def database_uri(cls):
+        return database_url('sqlite:///collabu_dev.db')
+
 
 class DevelopmentConfig(Config):
-    """Development-specific settings"""
-    DEBUG = True
-    TESTING = False
+    pass
 
-class ProductionConfig(Config):
-    """Production-specific settings"""
-    DEBUG = False
-    TESTING = False
-    
-    @classmethod
-    def validate(cls):
-        """Ensure required production configs are set"""
-        required = ['SECRET_KEY', 'JWT_SECRET_KEY', 'DATABASE_URL']
-        missing = [key for key in required if not os.environ.get(key)]
-        if missing:
-            raise ValueError(f"Production requires: {', '.join(missing)}")
 
 class TestingConfig(Config):
-    """Testing-specific settings"""
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    @classmethod
+    def database_uri(cls):
+        return 'sqlite:///:memory:'
+
+
+class ProductionConfig(Config):
+    REQUIRED_ENV = ['SECRET_KEY', 'JWT_SECRET_KEY', 'DATABASE_URL']
+
+
+CONFIGS = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+}
+
+
+def load_config(name=None):
+    name = name or os.environ.get('FLASK_ENV', 'development')
+    return CONFIGS[name].load()

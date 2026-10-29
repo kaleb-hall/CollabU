@@ -1,75 +1,56 @@
-from marshmallow import Schema, fields, validate, validates_schema, ValidationError, EXCLUDE
-from datetime import datetime
+from marshmallow import EXCLUDE, Schema, ValidationError, fields, validate, validates
+
+from app.schemas.fields import UtcDateTime
+from app.schemas.user_schema import UserSchema
+from app.utils.time import utcnow
+
+PROJECT_STATUSES = ['active', 'completed', 'archived', 'on_hold']
+MEMBER_ROLES = ['admin', 'member', 'viewer']
+
 
 class ProjectMemberSchema(Schema):
-    """Schema for project member output"""
     id = fields.Int(dump_only=True)
     project_id = fields.Int(dump_only=True)
     user_id = fields.Int(dump_only=True)
     role = fields.Str(dump_only=True)
-    joined_at = fields.DateTime(dump_only=True)
-    user = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
+    joined_at = UtcDateTime(dump_only=True)
+    user = fields.Nested(UserSchema, dump_only=True)
+
 
 class ProjectSchema(Schema):
-    """Schema for project output"""
     id = fields.Int(dump_only=True)
-    title = fields.Str(required=True)
-    description = fields.Str(allow_none=True)
-    deadline = fields.DateTime(required=True)
+    title = fields.Str(dump_only=True)
+    description = fields.Str(dump_only=True)
+    deadline = UtcDateTime(dump_only=True)
     status = fields.Str(dump_only=True)
     created_by = fields.Int(dump_only=True)
-    created_at = fields.DateTime(dump_only=True)
-    updated_at = fields.DateTime(dump_only=True)
-    owner = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
+    created_at = UtcDateTime(dump_only=True)
+    updated_at = UtcDateTime(dump_only=True)
+    owner = fields.Nested(UserSchema, dump_only=True)
     members = fields.Nested(ProjectMemberSchema, many=True, dump_only=True)
-    tasks = fields.Nested('TaskSchema', many=True, dump_only=True)
+
+
+def validate_future(value):
+    if value < utcnow():
+        raise ValidationError('Deadline must be in the future')
+
 
 class ProjectCreateSchema(Schema):
-    """Schema for creating a project"""
     class Meta:
         unknown = EXCLUDE
 
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     description = fields.Str(allow_none=True)
-    deadline = fields.DateTime(required=True)
-    
-    @validates_schema
-    def validate_deadline(self, data, **kwargs):
-        """Ensure deadline is in the future"""
-        if data.get('deadline'):
-            # Make deadline timezone-naive for comparison
-            deadline = data['deadline']
-            if deadline.tzinfo is not None:
-                deadline = deadline.replace(tzinfo=None)
-            
-            now = datetime.utcnow()
-            
-            if deadline < now:
-                raise ValidationError('Deadline must be in the future', 'deadline')
+    deadline = UtcDateTime(required=True, validate=validate_future)
+
 
 class ProjectUpdateSchema(Schema):
-    """Schema for updating a project"""
     title = fields.Str(validate=validate.Length(min=1, max=200))
     description = fields.Str(allow_none=True)
-    deadline = fields.DateTime()
-    status = fields.Str(validate=validate.OneOf(['active', 'completed', 'archived', 'on_hold']))
-    
-    @validates_schema
-    def validate_deadline(self, data, **kwargs):
-        """Ensure deadline is in the future"""
-        if data.get('deadline'):
-            # Make deadline timezone-naive for comparison
-            deadline = data['deadline']
-            if deadline.tzinfo is not None:
-                deadline = deadline.replace(tzinfo=None)
-            
-            now = datetime.utcnow()
-            
-            if deadline < now:
-                raise ValidationError('Deadline must be in the future', 'deadline')
+    deadline = UtcDateTime(validate=validate_future)
+    status = fields.Str(validate=validate.OneOf(PROJECT_STATUSES))
+
 
 class AddMemberSchema(Schema):
-    """Schema for adding a member to a project"""
     user_id = fields.Int(required=True)
-    role = fields.Str(validate=validate.OneOf(['admin', 'member', 'viewer']), missing='member')
-
+    role = fields.Str(validate=validate.OneOf(MEMBER_ROLES), load_default='member')

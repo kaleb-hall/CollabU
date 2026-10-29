@@ -1,6 +1,6 @@
 import os
 
-os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+
 
 import pytest
 
@@ -9,7 +9,7 @@ from app import create_app, db
 
 @pytest.fixture
 def app():
-    app = create_app()
+    app = create_app('testing')
     app.config['TESTING'] = True
     with app.app_context():
         db.create_all()

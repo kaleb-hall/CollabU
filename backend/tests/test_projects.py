@@ -40,7 +40,7 @@ def test_admin_can_update_and_delete(client):
     response = client.put(f"/api/projects/{project['id']}", json={'title': 'Renamed'}, headers=headers)
     assert response.status_code == 200
     assert response.get_json()['project']['title'] == 'Renamed'
-    assert client.delete(f"/api/projects/{project['id']}", headers=headers).status_code == 200
+    assert client.delete(f"/api/projects/{project['id']}", headers=headers).status_code == 204
     assert client.get(f"/api/projects/{project['id']}", headers=headers).status_code == 404
 
 
@@ -57,7 +57,7 @@ def test_add_and_remove_member(client):
     again = client.post(f"/api/projects/{project['id']}/members", json={'user_id': sam['id']}, headers=owner)
     assert again.status_code == 409
 
-    assert client.delete(f"/api/projects/{project['id']}/members/{member_id}", headers=owner).status_code == 200
+    assert client.delete(f"/api/projects/{project['id']}/members/{member_id}", headers=owner).status_code == 204
     assert client.get(f"/api/projects/{project['id']}", headers=sam_headers).status_code == 403
 
 

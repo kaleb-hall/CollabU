@@ -25,7 +25,7 @@ def test_create_list_update_delete_block(client):
     assert response.status_code == 200
     assert response.get_json()['block']['title'] == 'CS 102'
 
-    assert client.delete(f'/api/calendar/blocks/{block_id}', headers=headers).status_code == 200
+    assert client.delete(f'/api/calendar/blocks/{block_id}', headers=headers).status_code == 204
     assert client.get('/api/calendar/blocks', headers=headers).get_json()['blocks'] == []
 
 
