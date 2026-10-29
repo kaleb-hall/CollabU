@@ -29,6 +29,14 @@
   --status-done: #3F6E4B;
 
   --focus: #2F5C93;
+
+  /* Project dots: muted and meaningless on purpose */
+  --dot-1: #3E6A9E;
+  --dot-2: #4F7A5A;
+  --dot-3: #8A6D2B;
+  --dot-4: #6A5590;
+  --dot-5: #2F7C80;
+  --dot-6: #8A5A6E;
   --elev-card: 0 1px 0 rgb(28 42 68 / 0.06), 0 2px 6px rgb(28 42 68 / 0.06);
   --elev-lift: 0 10px 24px rgb(28 42 68 / 0.14), 0 2px 6px rgb(28 42 68 / 0.08);
 }
@@ -58,6 +66,13 @@
     --status-done: #9FCFA9;
 
     --focus: #E2C877;
+
+    --dot-1: #9DBCE6;
+    --dot-2: #9FCFA9;
+    --dot-3: #E2C877;
+    --dot-4: #C7B6E6;
+    --dot-5: #8FD3D1;
+    --dot-6: #E3AFC4;
     --elev-card: 0 1px 0 rgb(0 0 0 / 0.25), 0 2px 6px rgb(0 0 0 / 0.25);
     --elev-lift: 0 12px 28px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
   }
