@@ -291,6 +291,8 @@ Too much for one phase, so I split it. Each part ends with a stop for your OK.
 - Skeleton loading states, empty states that say what to do next, error states with a retry button.
 - Mobile layouts (kanban scrolls column by column on a phone, bottom-friendly buttons), keyboard navigation, visible focus rings, contrast checked in both themes.
 
+**Dashboard checkpoint (branch `phase-3-design`, waiting for feedback):** Tailwind v4, tokens with a contrast test for both themes, fonts, sonner, Base UI header (menu, popover) and dialog, and the redesigned dashboard. 125 frontend tests. Dashboard first load is 193.7 kB gzipped (phase 1 ended at 117.1 kB); most of the difference is Base UI and its positioning library. motion's full build is kept off the dashboard and saved for the kanban board.
+
 **Order after your dashboard feedback:** login/register, project detail (kanban, task panel, activity, files, workload), calendar, notifications, settings, invite pages, command menu.
 
 ---
