@@ -67,7 +67,8 @@ export default function Dashboard() {
               </div>
             )}
           </section>
-          <aside>
+          {/* On phones, what is due comes first; on wide screens it sits on the right */}
+          <aside className="order-first lg:order-none">
             <DueSoonCard tasks={tasksQuery.data} />
           </aside>
         </div>
