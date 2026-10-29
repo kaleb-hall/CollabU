@@ -19,15 +19,47 @@ export function useMyTasks() {
 }
 
 // Anything that changes a task changes the board, my tasks, project progress and the feed.
-function useInvalidateTasks(projectId) {
-  const queryClient = useQueryClient()
-  return () => Promise.all([
+function invalidateTaskQueries(queryClient, projectId) {
+  return Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(projectId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.myTasks }),
     queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
     queryClient.invalidateQueries({ queryKey: queryKeys.activity(projectId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.workload(projectId) }),
   ])
+}
+
+function useInvalidateTasks(projectId) {
+  const queryClient = useQueryClient()
+  return () => invalidateTaskQueries(queryClient, projectId)
+}
+
+// Create a task in any project (the project is chosen in the form)
+export function useCreateTaskIn() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, task }) => taskService.createTask(projectId, task),
+    onSuccess: (_data, { projectId }) => invalidateTaskQueries(queryClient, projectId),
+  })
+}
+
+// Change one of my tasks' status from a list (checking it off): updates my list right away
+export function useSetMyTaskStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ task, status }) => taskService.updateTaskStatus(task.id, status),
+    onMutate: async ({ task, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.myTasks })
+      const previous = queryClient.getQueryData(queryKeys.myTasks)
+      queryClient.setQueryData(queryKeys.myTasks, (data) => data && {
+        ...data,
+        tasks: data.tasks.map((item) => (item.id === task.id ? { ...item, status } : item)),
+      })
+      return { previous }
+    },
+    onError: (_error, _variables, context) => queryClient.setQueryData(queryKeys.myTasks, context.previous),
+    onSettled: (_data, _error, { task }) => invalidateTaskQueries(queryClient, task.project_id),
+  })
 }
 
 export function useCreateTask(projectId) {
