@@ -21,6 +21,7 @@
   --color-status-blocked: var(--status-blocked);
   --color-status-done: var(--status-done);
   --color-focus: var(--focus);
+  --color-scrim: var(--scrim);
 
   --font-display: "Young Serif", Georgia, serif;
   --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;

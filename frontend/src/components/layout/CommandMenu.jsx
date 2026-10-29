@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog } from '@base-ui/react/dialog';
 import { Command } from 'cmdk';
@@ -11,6 +12,7 @@ const GROUP = '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1 [&_[c
 // Ctrl/Cmd+K: jump to a project or page, or start something new
 export default function CommandMenu({ open, onOpenChange, onNewTask, onNewProject }) {
   const navigate = useNavigate();
+  const inputRef = useRef(null);
   const projects = (useProjects().data ?? []).filter((project) => project.status === 'active');
 
   const run = (action) => {
@@ -21,12 +23,12 @@ export default function CommandMenu({ open, onOpenChange, onNewTask, onNewProjec
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/30 transition-opacity duration-150 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />
-        <Dialog.Popup className="fixed left-1/2 top-[12vh] z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-card border border-line bg-card shadow-lift transition-opacity duration-150 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0">
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-scrim transition-opacity duration-150 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />
+        <Dialog.Popup initialFocus={inputRef} className="fixed left-1/2 top-[12vh] z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-card border border-line bg-card shadow-lift transition-opacity duration-150 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0">
           <Dialog.Title className="sr-only">Search and commands</Dialog.Title>
           <Command label="Search and commands" className={GROUP}>
             <Command.Input
-              autoFocus
+              ref={inputRef}
               placeholder="Search projects and actions"
               className="h-12 w-full border-b border-line bg-transparent px-4 text-base text-ink outline-none placeholder:text-ink-faint"
             />

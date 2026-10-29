@@ -8,7 +8,7 @@ export default function Modal({ open, onOpenChange, title, description, children
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/30 transition-opacity duration-200 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-scrim transition-opacity duration-200 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0" />
         <Dialog.Popup
           className={cx(
             'fixed z-50 inset-x-0 bottom-0 max-h-[92vh] overflow-y-auto rounded-t-xl border border-line bg-card p-6 shadow-lift',
