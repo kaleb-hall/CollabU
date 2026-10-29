@@ -54,6 +54,9 @@ export default function Calendar() {
   const navigate = useNavigate();
   const tasksQuery = useMyTasks();
   const projectsQuery = useProjects();
+  // The page owns the visible date and view so a refetch can never jump back to today
+  const [date, setDate] = useState(() => new Date());
+  const [view, setView] = useState('week');
   const [range, setRange] = useState(() => weekRange(new Date()));
   const blocksQuery = useCalendarBlocks(range);
   const deleteBlock = useDeleteBlock();
@@ -226,7 +229,10 @@ export default function Calendar() {
                 selectable
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
-                defaultView="week"
+                date={date}
+                view={view}
+                onNavigate={setDate}
+                onView={setView}
                 step={30}
                 timeslots={2}
                 min={setHours(setMinutes(new Date(), 0), 6)}
