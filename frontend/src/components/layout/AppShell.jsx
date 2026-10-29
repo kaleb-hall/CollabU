@@ -1,10 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { AppActionsContext } from '../../contexts/appActions';
 import { readFlag, writeFlag } from '../../lib/storage';
-import NewProjectDialog from '../projects/NewProjectDialog';
-import NewTaskDialog from '../tasks/NewTaskDialog';
 import Drawer from '../ui/Drawer';
-import CommandMenu from './CommandMenu';
 import MobileNav from './MobileNav';
 import ProjectNav from './ProjectNav';
 import Sidebar from './Sidebar';
@@ -12,11 +9,19 @@ import TopBar from './TopBar';
 
 const COLLAPSED_KEY = 'collabu.sidebarCollapsed';
 
+// These are only needed once someone opens them, so they download on first use
+const CommandMenu = lazy(() => import('./CommandMenu'));
+const NewTaskDialog = lazy(() => import('../tasks/NewTaskDialog'));
+const NewProjectDialog = lazy(() => import('../projects/NewProjectDialog'));
+
 // The frame around every signed-in page, laid out like Jira or Google Calendar:
 // a sidebar on a tinted frame, and the page itself on a paper sheet.
 export default function AppShell({ children }) {
   const [collapsed, setCollapsed] = useState(() => readFlag(COLLAPSED_KEY));
   const [dialog, setDialog] = useState(null); // 'command' | 'task' | 'project' | 'projects'
+  // Once a dialog has been opened it stays mounted, so its closing animation can play
+  const [loaded, setLoaded] = useState(() => new Set());
+  if (dialog && !loaded.has(dialog)) setLoaded(new Set(loaded).add(dialog));
 
   useEffect(() => {
     const onKey = (event) => {
@@ -61,10 +66,14 @@ export default function AppShell({ children }) {
         <MobileNav onProjects={() => setDialog('projects')} onSearch={actions.openCommand} />
       </div>
 
-      <CommandMenu open={dialog === 'command'} onOpenChange={closer('command')}
-        onNewTask={actions.openNewTask} onNewProject={actions.openNewProject} />
-      <NewTaskDialog open={dialog === 'task'} onOpenChange={closer('task')} />
-      <NewProjectDialog open={dialog === 'project'} onOpenChange={closer('project')} />
+      <Suspense fallback={null}>
+        {loaded.has('command') && (
+          <CommandMenu open={dialog === 'command'} onOpenChange={closer('command')}
+            onNewTask={actions.openNewTask} onNewProject={actions.openNewProject} />
+        )}
+        {loaded.has('task') && <NewTaskDialog open={dialog === 'task'} onOpenChange={closer('task')} />}
+        {loaded.has('project') && <NewProjectDialog open={dialog === 'project'} onOpenChange={closer('project')} />}
+      </Suspense>
       <Drawer open={dialog === 'projects'} onOpenChange={closer('projects')} title="Projects">
         <ProjectNav onNewProject={actions.openNewProject} onNavigate={() => setDialog(null)} />
       </Drawer>
