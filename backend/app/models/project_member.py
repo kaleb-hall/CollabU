@@ -10,7 +10,7 @@ class ProjectMember(db.Model):
     
     # Foreign Keys
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
     # Role in project
     role = db.Column(db.String(20), default='member', nullable=False)
@@ -20,7 +20,7 @@ class ProjectMember(db.Model):
     joined_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
-    user = db.relationship('User', backref='project_memberships')
+    user = db.relationship('User', backref='project_memberships', lazy='selectin')
     
     def to_dict(self):
         """Convert project member to dictionary"""

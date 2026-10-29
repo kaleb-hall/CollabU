@@ -30,6 +30,17 @@ class ProjectSchema(Schema):
     members = fields.Nested(ProjectMemberSchema, many=True, dump_only=True)
 
 
+class NextTaskSchema(Schema):
+    id = fields.Int()
+    title = fields.Str()
+    due_date = UtcDateTime()
+
+
+class TaskSummarySchema(Schema):
+    task_counts = fields.Dict(keys=fields.Str(), values=fields.Int())
+    next_task = fields.Nested(NextTaskSchema, allow_none=True)
+
+
 def validate_future(value):
     if value < utcnow():
         raise ValidationError('Deadline must be in the future')

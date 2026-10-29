@@ -9,12 +9,12 @@ class Project(db.Model):
     description = db.Column(db.Text, nullable=True)
     deadline = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='active', nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships (only include models we've created)
-    owner = db.relationship('User', backref='projects_owned', foreign_keys=[created_by])
+    owner = db.relationship('User', backref='projects_owned', foreign_keys=[created_by], lazy='selectin')
     members = db.relationship('ProjectMember', backref='project', lazy=True, cascade='all, delete-orphan')
     tasks = db.relationship('Task', backref='project', lazy=True, cascade='all, delete-orphan')
     # We'll add these later when we create those models:

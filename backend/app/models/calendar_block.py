@@ -3,6 +3,7 @@ from datetime import datetime
 
 class CalendarBlock(db.Model):
     __tablename__ = 'calendar_blocks'
+    __table_args__ = (db.Index('ix_calendar_blocks_user_id_start_time', 'user_id', 'start_time'),)
     
     # Primary Key
     id = db.Column(db.Integer, primary_key=True)

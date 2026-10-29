@@ -7,6 +7,7 @@ from app.schemas.project_schema import (
     ProjectMemberSchema,
     ProjectSchema,
     ProjectUpdateSchema,
+    TaskSummarySchema,
 )
 from app.services import deadline_service, project_service, task_templates
 from app.utils.auth import current_user_id
@@ -18,6 +19,7 @@ project_bp = Blueprint('projects', __name__)
 project_schema = ProjectSchema()
 projects_schema = ProjectSchema(many=True)
 member_schema = ProjectMemberSchema()
+summary_schema = TaskSummarySchema()
 
 
 @project_bp.route('', methods=['POST'])
@@ -44,7 +46,10 @@ def create_project():
 @jwt_required()
 def list_projects():
     projects = project_service.projects_for_user(current_user_id())
-    return jsonify({'projects': projects_schema.dump(projects)}), 200
+    summaries = project_service.task_summaries([project.id for project in projects])
+    return jsonify({'projects': [
+        {**project_schema.dump(project), **summary_schema.dump(summaries[project.id])} for project in projects
+    ]}), 200
 
 
 @project_bp.route('/<int:project_id>', methods=['GET'])

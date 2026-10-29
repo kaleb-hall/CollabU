@@ -3,13 +3,14 @@ from datetime import datetime
 
 class Task(db.Model):
     __tablename__ = 'tasks'
+    __table_args__ = (db.Index('ix_tasks_project_id_status', 'project_id', 'status'),)
     
     # Primary Key
     id = db.Column(db.Integer, primary_key=True)
     
     # Foreign Keys
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
     
     # Task Information
     title = db.Column(db.String(200), nullable=False)
@@ -17,7 +18,7 @@ class Task(db.Model):
     
     # Scheduling
     start_date = db.Column(db.DateTime, nullable=True)
-    due_date = db.Column(db.DateTime, nullable=False)
+    due_date = db.Column(db.DateTime, nullable=False, index=True)
     estimated_hours = db.Column(db.Float, nullable=True)
     
     # Priority and Status
@@ -35,7 +36,7 @@ class Task(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
-    assignee = db.relationship('User', backref='tasks_assigned', foreign_keys=[assigned_to])
+    assignee = db.relationship('User', backref='tasks_assigned', foreign_keys=[assigned_to], lazy='selectin')
     
     def to_dict(self, include_project=False):
         """Convert task to dictionary"""

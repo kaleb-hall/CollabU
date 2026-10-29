@@ -53,3 +53,28 @@ def create_task(client, headers, project_id, **overrides):
     response = client.post(f'/api/tasks/project/{project_id}', json=payload, headers=headers)
     assert response.status_code == 201, response.get_json()
     return response.get_json()['task']
+
+
+class QueryCounter:
+    def __init__(self, engine):
+        self.engine = engine
+        self.count = 0
+
+    def __enter__(self):
+        from sqlalchemy import event
+        event.listen(self.engine, 'before_cursor_execute', self.increment)
+        return self
+
+    def __exit__(self, *exc):
+        from sqlalchemy import event
+        event.remove(self.engine, 'before_cursor_execute', self.increment)
+
+    def increment(self, *args):
+        self.count += 1
+
+
+@pytest.fixture
+def count_queries(app):
+    def counter():
+        return QueryCounter(db.engine)
+    return counter

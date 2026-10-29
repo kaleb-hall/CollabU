@@ -1,6 +1,11 @@
+from collections import defaultdict
+
+from sqlalchemy.orm import selectinload
+
 from app import db
 from app.errors import Conflict, NotFound
 from app.models import Project, ProjectMember, Task, User
+from app.schemas.task_schema import TASK_STATUSES
 from app.services import task_templates
 
 
@@ -37,7 +42,42 @@ def task_suggestions(project):
 
 
 def projects_for_user(user_id):
-    return Project.query.join(ProjectMember).filter(ProjectMember.user_id == user_id).all()
+    return (
+        Project.query.join(ProjectMember)
+        .filter(ProjectMember.user_id == user_id)
+        .options(selectinload(Project.members))
+        .order_by(Project.deadline)
+        .all()
+    )
+
+
+def task_summaries(project_ids):
+    """Task counts per status and the next open task for each project, in two queries."""
+    counts = defaultdict(lambda: {status: 0 for status in TASK_STATUSES})
+    rows = (
+        db.session.query(Task.project_id, Task.status, db.func.count(Task.id))
+        .filter(Task.project_id.in_(project_ids))
+        .group_by(Task.project_id, Task.status)
+    )
+    for project_id, status, count in rows:
+        counts[project_id][status] = count
+
+    next_tasks = {}
+    open_tasks = (
+        db.session.query(Task.project_id, Task.id, Task.title, Task.due_date)
+        .filter(Task.project_id.in_(project_ids), Task.status != 'completed')
+        .order_by(Task.due_date)
+    )
+    for project_id, task_id, title, due_date in open_tasks:
+        next_tasks.setdefault(project_id, {'id': task_id, 'title': title, 'due_date': due_date})
+
+    return {
+        project_id: {
+            'task_counts': {**counts[project_id], 'total': sum(counts[project_id].values())},
+            'next_task': next_tasks.get(project_id),
+        }
+        for project_id in project_ids
+    }
 
 
 def update_project(project, data):

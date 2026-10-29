@@ -1,3 +1,5 @@
+from sqlalchemy.orm import selectinload
+
 from app import db
 from app.errors import ValidationFailed
 from app.models import ProjectMember, Task
@@ -28,11 +30,11 @@ def create_task(project, data):
 
 
 def tasks_for_project(project):
-    return Task.query.filter_by(project_id=project.id).all()
+    return Task.query.filter_by(project_id=project.id).order_by(Task.due_date).all()
 
 
 def tasks_for_user(user_id):
-    return Task.query.filter_by(assigned_to=user_id).order_by(Task.due_date).all()
+    return Task.query.filter_by(assigned_to=user_id).options(selectinload(Task.project)).order_by(Task.due_date).all()
 
 
 def update_task(task, data):
