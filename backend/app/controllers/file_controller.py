@@ -1,33 +1,45 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db
-from app.models.file import File
+from flask import Blueprint, jsonify, request, send_file
+
+from app.schemas.file_schema import FileQuerySchema, FileSchema
+from app.services import file_service
+from app.utils.auth import current_user_id
+from app.utils.permissions import project_access
 
 file_bp = Blueprint('files', __name__)
 
-
-@file_bp.route('/project/<int:project_id>', methods=['GET'])
-@jwt_required()
-def get_project_files(project_id):
-    """List all files attached to a project."""
-    files = File.query.filter_by(project_id=project_id)\
-        .order_by(File.created_at.desc()).all()
-    return jsonify({
-        'files': [f.to_dict() for f in files]
-    }), 200
+file_schema = FileSchema()
 
 
-@file_bp.route('/<int:file_id>', methods=['DELETE'])
-@jwt_required()
-def delete_file(file_id):
-    """Remove a file attachment."""
-    user_id = get_jwt_identity()
-    file = File.query.filter_by(id=file_id, uploaded_by=user_id).first_or_404()
-    db.session.delete(file)
-    db.session.commit()
-    return jsonify({'message': 'File deleted'}), 200
+@file_bp.route('/projects/<int:project_id>/files', methods=['POST'])
+@project_access()
+def upload_file(project):
+    task_id = FileQuerySchema().load(request.form)['task_id']
+    record = file_service.upload(project, request.files.get('file'), task_id, current_user_id())
+    return jsonify({'file': file_schema.dump(record)}), 201
 
 
-# TODO: Implement file upload endpoint with size/type validation
-# TODO: Add Google Drive OAuth integration
-# TODO: Implement file preview generation
+@file_bp.route('/projects/<int:project_id>/files', methods=['GET'])
+@project_access()
+def list_files(project):
+    task_id = FileQuerySchema().load(request.args)['task_id']
+    return jsonify({'files': file_schema.dump(file_service.files_for(project, task_id), many=True)}), 200
+
+
+@file_bp.route('/files/<int:file_id>/download', methods=['GET'])
+@project_access()
+def download_file(project, file):
+    response = send_file(
+        file_service.open_file(file),
+        mimetype=file.content_type,
+        as_attachment=True,
+        download_name=file.filename,
+    )
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
+@file_bp.route('/files/<int:file_id>', methods=['DELETE'])
+@project_access()
+def delete_file(project, file):
+    file_service.delete_file(project, file, current_user_id())
+    return '', 204

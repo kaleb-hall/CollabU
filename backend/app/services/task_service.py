@@ -2,7 +2,7 @@ from sqlalchemy.orm import selectinload
 
 from app import db
 from app.errors import ValidationFailed
-from app.models import ProjectMember, Task, User
+from app.models import File, ProjectMember, Task, User
 from app.schemas.task_schema import STATUS_LABELS
 from app.services import activity_service, notification_service
 from app.utils.time import utcnow
@@ -79,5 +79,7 @@ def notify_assignee(task, actor_id):
 
 
 def delete_task(task):
+    # Attachments stay on the project when their task is deleted
+    File.query.filter_by(task_id=task.id).update({'task_id': None})
     db.session.delete(task)
     db.session.commit()

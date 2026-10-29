@@ -19,6 +19,7 @@ class Project(db.Model):
     tasks = db.relationship('Task', backref='project', lazy=True, cascade='all, delete-orphan')
     activities = db.relationship('Activity', backref='project', lazy=True, cascade='all, delete-orphan')
     invites = db.relationship('Invite', backref='project', lazy=True, cascade='all, delete-orphan')
+    files = db.relationship('File', backref='project', lazy=True, cascade='all, delete-orphan')
     
 
     def __repr__(self):

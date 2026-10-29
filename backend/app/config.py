@@ -1,7 +1,10 @@
 import os
+import tempfile
 from datetime import timedelta
 
 DEV_SECRET = 'dev-only-secret-not-for-production'
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def database_url(default):
@@ -38,7 +41,15 @@ class Config:
             'TESTING': cls is TestingConfig,
             'EMAIL_BACKEND': cls.email_backend(),
             'FRONTEND_URL': os.environ.get('FRONTEND_URL', 'http://localhost:5173'),
+            'UPLOAD_FOLDER': cls.upload_folder(),
+            'MAX_UPLOAD_BYTES': MAX_UPLOAD_BYTES,
+            # Flask rejects anything bigger before reading it (a little room for form fields)
+            'MAX_CONTENT_LENGTH': MAX_UPLOAD_BYTES + 512 * 1024,
         }
+
+    @classmethod
+    def upload_folder(cls):
+        return os.environ.get('UPLOAD_FOLDER', os.path.join(BACKEND_DIR, 'uploads'))
 
     @classmethod
     def email_backend(cls):
@@ -61,6 +72,10 @@ class TestingConfig(Config):
     @classmethod
     def email_backend(cls):
         return 'memory'
+
+    @classmethod
+    def upload_folder(cls):
+        return tempfile.mkdtemp(prefix='collabu-test-uploads-')
 
 
 class ProductionConfig(Config):

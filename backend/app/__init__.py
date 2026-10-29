@@ -14,6 +14,7 @@ def create_app(config_name=None):
     from app.config import load_config
     from app.errors import register_error_handlers
     from app.services.email_sender import init_email
+    from app.services.storage import init_storage
 
     app = Flask(__name__)
     app.config.update(load_config(config_name))
@@ -27,6 +28,7 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_commands(app)
     init_email(app)
+    init_storage(app)
     return app
 
 
@@ -34,6 +36,7 @@ def register_blueprints(app):
     from app.controllers.auth_controller import auth_bp
     from app.controllers.calendar_controller import calendar_bp
     from app.controllers.comment_controller import comment_bp
+    from app.controllers.file_controller import file_bp
     from app.controllers.invite_controller import invite_bp
     from app.controllers.notification_controller import notification_bp
     from app.controllers.project_controller import project_bp
@@ -48,6 +51,7 @@ def register_blueprints(app):
     app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(invite_bp, url_prefix='/api')
+    app.register_blueprint(file_bp, url_prefix='/api')
 
 
 from app import models  # noqa: E402,F401

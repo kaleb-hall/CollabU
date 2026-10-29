@@ -4,26 +4,32 @@ from flask_jwt_extended import jwt_required
 
 from app import db
 from app.errors import Forbidden, NotFound
-from app.models import Project, ProjectMember, Task
+from app.models import File, Project, ProjectMember, Task
 from app.utils.auth import current_user_id
+
+
+# URL ids that belong to a project, and the model to look them up in
+CHILD_MODELS = {'task': (Task, 'Task'), 'file': (File, 'File')}
 
 
 def project_access(admin=False):
     """Require a logged-in project member (or admin) for the project in the URL.
 
     Routes with <project_id> receive `project` instead.
-    Routes with <task_id> receive `task` and `project` instead.
+    Routes with <task_id> or <file_id> receive `task` or `file`, plus `project`.
     """
     def decorator(route):
         @wraps(route)
         @jwt_required()
         def wrapper(*args, **kwargs):
-            if 'task_id' in kwargs:
-                task = db.session.get(Task, kwargs.pop('task_id'))
-                if not task:
-                    raise NotFound('Task not found')
-                kwargs['task'] = task
-                project_id = task.project_id
+            child = next((name for name in CHILD_MODELS if f'{name}_id' in kwargs), None)
+            if child:
+                model, label = CHILD_MODELS[child]
+                record = db.session.get(model, kwargs.pop(f'{child}_id'))
+                if not record:
+                    raise NotFound(f'{label} not found')
+                kwargs[child] = record
+                project_id = record.project_id
             else:
                 project_id = kwargs.pop('project_id')
 

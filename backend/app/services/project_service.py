@@ -6,7 +6,7 @@ from app import db
 from app.errors import Conflict, NotFound
 from app.models import Project, ProjectMember, Task, User
 from app.schemas.task_schema import TASK_STATUSES
-from app.services import activity_service, notification_service, task_templates
+from app.services import activity_service, file_service, notification_service, task_templates
 
 
 def create_project(data, user_id, auto_generate_tasks=False, template=None):
@@ -89,8 +89,10 @@ def update_project(project, data):
 
 
 def delete_project(project):
+    stored = [record.storage_key for record in project.files]
     db.session.delete(project)
     db.session.commit()
+    file_service.delete_stored(stored)
 
 
 def add_member(project, user_id, role='member'):
