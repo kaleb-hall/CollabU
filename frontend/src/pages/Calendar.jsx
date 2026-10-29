@@ -9,6 +9,7 @@ import { useMyTasks } from '../hooks/useTasks';
 import { formatDateTime, formatTime, fromInputValue, parseApiDate, toInputValue } from '../lib/dates';
 import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
+import NotificationBell from '../components/NotificationBell';
 import {
   ArrowLeft,
   Plus,
@@ -191,13 +192,16 @@ export default function Calendar() {
               <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
             </div>
 
-            <button
-              onClick={() => setShowAddBlock(true)}
-              className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Add Busy Time
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <button
+                onClick={() => setShowAddBlock(true)}
+                className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Add Busy Time
+              </button>
+            </div>
           </div>
         </div>
       </header>

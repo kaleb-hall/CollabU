@@ -12,6 +12,7 @@ const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const Calendar = lazy(() => import('./pages/Calendar'));
+const InviteAccept = lazy(() => import('./pages/InviteAccept'));
 
 const queryClient = createQueryClient();
 
@@ -39,6 +40,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/invite/:token" element={<InviteAccept />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
               <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />

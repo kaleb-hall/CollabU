@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getErrorMessage } from '../lib/errors';
+import { getPendingInvite } from '../lib/pendingInvite';
 import toast from 'react-hot-toast';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => getPendingInvite()?.email ?? '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -18,7 +19,8 @@ export default function Login() {
     try {
       await login({ email, password });
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      const pending = getPendingInvite();
+      navigate(pending ? `/invite/${pending.token}` : '/dashboard');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Login failed'));
     } finally {

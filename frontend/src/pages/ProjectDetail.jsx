@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useAddMember, useProject, useUserSearch } from '../hooks/useProjects';
+import { useProject } from '../hooks/useProjects';
 import { useCalculateSchedule, useCreateTask, useMoveTask, useProjectTasks, useUpdateTask } from '../hooks/useTasks';
-import { formatDate, formatShortDate, fromInputValue, parseApiDate, toInputValue, userTimeZone } from '../lib/dates';
+import { formatDate, formatShortDate, fromInputValue, toInputValue, userTimeZone } from '../lib/dates';
 import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
+import ActivityFeed from '../components/ActivityFeed';
+import InviteMemberModal from '../components/InviteMemberModal';
+import NotificationBell from '../components/NotificationBell';
+import TaskComments from '../components/TaskComments';
 
 const STATUS_COLUMNS = [
   { value: 'todo', label: 'To Do', color: 'gray' },
@@ -23,8 +27,6 @@ import {
   CheckSquare,
   Clock,
   UserPlus,
-  Search,
-  X,
   Edit2
 } from 'lucide-react';
 
@@ -44,7 +46,7 @@ export default function ProjectDetail() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [showAddMember, setShowAddMember] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   const handleCalculateSchedule = () => {
     if (tasks.length === 0) {
@@ -105,28 +107,9 @@ export default function ProjectDetail() {
 
 
   const teamMembers = project.members || [];
+  const isAdmin = teamMembers.some((m) => m.user_id === currentUser?.id && m.role === 'admin');
 
-  const recentActivity = [...tasks]
-    .sort((a, b) => parseApiDate(b.updated_at) - parseApiDate(a.updated_at))
-    .slice(0, 8)
-    .map(task => {
-      const userName = task.assignee 
-        ? `${task.assignee.first_name}` 
-        : currentUser?.first_name || 'Someone';
-      
-      return {
-        text: task.status === 'completed' 
-          ? `${userName} completed ${task.title}`
-          : task.status === 'in_progress'
-          ? `${userName} started ${task.title}`
-          : `${userName} updated ${task.title}`,
-        time: getRelativeTime(task.updated_at),
-        color: task.status === 'completed' ? 'teal' : 
-               task.status === 'in_progress' ? 'blue' :
-               'gray'
-      };
-    });
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
       {/* Diagonal Stripe Pattern */}
@@ -148,7 +131,10 @@ export default function ProjectDetail() {
               Back to Projects
             </button>
             
-            <h1 className="text-2xl font-bold text-gray-900">CollabU</h1>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <h1 className="text-2xl font-bold text-gray-900">CollabU</h1>
+            </div>
           </div>
         </div>
       </header>
@@ -246,13 +232,15 @@ export default function ProjectDetail() {
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Team Members</h3>
-                <button
-                  onClick={() => setShowAddMember(true)}
-                  className="text-blue-600 hover:text-blue-700 transition-colors"
-                  title="Add Team Member"
-                >
-                  <UserPlus size={20} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowInvite(true)}
+                    className="text-blue-600 hover:text-blue-700 transition-colors"
+                    aria-label="Invite a teammate"
+                  >
+                    <UserPlus size={20} />
+                  </button>
+                )}
               </div>
               {teamMembers.length === 0 ? (
                 <p className="text-sm text-gray-600">No team members yet</p>
@@ -283,20 +271,7 @@ export default function ProjectDetail() {
             {/* Recent Activity */}
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h3>
-              {recentActivity.length === 0 ? (
-                <p className="text-sm text-gray-600">No recent activity</p>
-              ) : (
-                <div className="space-y-3">
-                  {recentActivity.map((activity, i) => (
-                    <ActivityItem 
-                      key={i}
-                      color={activity.color}
-                      text={activity.text}
-                      time={activity.time}
-                    />
-                  ))}
-                </div>
-              )}
+              <ActivityFeed projectId={id} />
             </div>
           </div>
         </div>
@@ -326,15 +301,7 @@ export default function ProjectDetail() {
         />
       )}
 
-      {/* Add Member Modal */}
-      {showAddMember && (
-        <AddMemberModal
-          projectId={id}
-          existingMembers={teamMembers}
-          onClose={() => setShowAddMember(false)}
-          onSuccess={() => setShowAddMember(false)}
-        />
-      )}
+      {showInvite && <InviteMemberModal projectId={id} onClose={() => setShowInvite(false)} />}
     </div>
   );
 }
@@ -456,27 +423,6 @@ function TaskCard({ task, onStatusChange, onEditTask }) {
         }`}>
           {task.priority}
         </span>
-      </div>
-    </div>
-  );
-}
-
-// Activity Item Component
-function ActivityItem({ color, text, time }) {
-  const colorClasses = {
-    teal: 'bg-teal-500',
-    blue: 'bg-blue-500',
-    purple: 'bg-purple-500',
-    orange: 'bg-orange-500',
-    gray: 'bg-gray-500',
-  };
-
-  return (
-    <div className="flex items-start gap-3">
-      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${colorClasses[color]}`}></div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 truncate">{text}</p>
-        <p className="text-xs text-gray-500">{time}</p>
       </div>
     </div>
   );
@@ -642,8 +588,8 @@ function EditTaskModal({ task, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Task</h2>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Task details</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -733,160 +679,11 @@ function EditTaskModal({ task, onClose, onSuccess }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-}
 
-// Add Member Modal Component (keeping from before)
-function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedRole, setSelectedRole] = useState('member');
-  const usersQuery = useUserSearch(searchQuery.trim());
-  const addMember = useAddMember(projectId);
-  const loading = usersQuery.isPending;
-  const submitting = addMember.isPending;
-
-  const existingUserIds = existingMembers.map(m => m.user_id);
-  const filteredUsers = (usersQuery.data ?? []).filter(u => !existingUserIds.includes(u.id));
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!selectedUser) {
-      toast.error('Please select a user');
-      return;
-    }
-    addMember.mutate({ user_id: selectedUser.id, role: selectedRole }, {
-      onSuccess: () => {
-        toast.success('Team member added');
-        onSuccess();
-      },
-      onError: (error) => toast.error(getErrorMessage(error, 'Could not add the member')),
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Add Team Member</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={24} />
-          </button>
+        <div className="mt-6 pt-6 border-t">
+          <TaskComments taskId={task.id} projectId={task.project_id} />
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Users
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Search by name or email"
-              />
-            </div>
-          </div>
-
-          <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
-            {loading ? (
-              <div className="p-4 text-center text-gray-600">Loading users...</div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="p-4 text-center text-gray-600">
-                {searchQuery ? 'No users found' : 'All users are already members'}
-              </div>
-            ) : (
-              <div className="divide-y">
-                {filteredUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    onClick={() => setSelectedUser(user)}
-                    className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-                      selectedUser?.id === user.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                        {user.first_name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {user.first_name} {user.last_name}
-                        </p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                      </div>
-                      {selectedUser?.id === user.id && (
-                        <CheckSquare className="text-blue-600" size={20} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {selectedUser && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Role
-              </label>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-                <option value="viewer">Viewer</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                {selectedRole === 'admin' && 'Can manage project, tasks, and members'}
-                {selectedRole === 'member' && 'Can view and update tasks'}
-                {selectedRole === 'viewer' && 'Can only view project'}
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || !selectedUser}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Adding...' : 'Add Member'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
-}
-
-// Helper function for relative time
-function getRelativeTime(dateString) {
-  const date = parseApiDate(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
-  
-  if (diffInSeconds < 60) return 'Just now';
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
-  return formatDate(date);
 }

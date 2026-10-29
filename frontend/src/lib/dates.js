@@ -1,6 +1,6 @@
 // The API always sends and receives UTC ISO strings. Everything shown to the
 // user is in their local time. All date handling in the app goes through here.
-import { differenceInCalendarDays, format, isToday, isTomorrow } from 'date-fns'
+import { differenceInCalendarDays, format, formatDistanceToNowStrict, isToday, isTomorrow } from 'date-fns'
 
 const HAS_ZONE = /(Z|[+-]\d\d:?\d\d)$/
 
@@ -53,4 +53,10 @@ export function daysUntil(value) {
 
 export function userTimeZone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone
+}
+
+export function timeAgo(value) {
+  const date = parseApiDate(value)
+  if (Date.now() - date.getTime() < 60_000) return 'just now'
+  return formatDistanceToNowStrict(date, { addSuffix: true })
 }

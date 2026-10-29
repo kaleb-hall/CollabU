@@ -31,15 +31,14 @@ export const projectService = {
     return response.data;
   },
 
-  // Add member to project
-  addMember: async (projectId, userData) => {
-    const response = await api.post(`/projects/${projectId}/members`, userData);
-    return response.data;
+  // Remove member from project
+  removeMember: async (projectId, memberId) => {
+    await api.delete(`/projects/${projectId}/members/${memberId}`);
   },
 
-  // Remove member from project
-  removeMember: async (projectId, userId) => {
-    const response = await api.delete(`/projects/${projectId}/members/${userId}`);
+  // Activity feed, newest first. Pass the previous page's next_cursor as `before`.
+  getActivity: async (projectId, before) => {
+    const response = await api.get(`/projects/${projectId}/activity`, { params: { before } });
     return response.data;
   },
 };

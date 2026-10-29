@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getErrorMessage } from '../lib/errors';
+import { getPendingInvite } from '../lib/pendingInvite';
 import toast from 'react-hot-toast';
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    email: '',
+    email: getPendingInvite()?.email ?? '',
     password: '',
     first_name: '',
     last_name: '',
@@ -26,7 +27,8 @@ export default function Register() {
     try {
       await register(formData);
       toast.success('Account created successfully!');
-      navigate('/dashboard');
+      const pending = getPendingInvite();
+      navigate(pending ? `/invite/${pending.token}` : '/dashboard');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Registration failed'));
     } finally {

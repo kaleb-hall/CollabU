@@ -1,9 +1,10 @@
 import api from './api';
+import { userTimeZone } from '../lib/dates';
 
 export const authService = {
   // Register new user
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
+    const response = await api.post('/auth/register', { ...userData, timezone: userTimeZone() });
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -13,7 +14,7 @@ export const authService = {
 
   // Login user
   login: async (credentials) => {
-    const response = await api.post('/auth/login', credentials);
+    const response = await api.post('/auth/login', { ...credentials, timezone: userTimeZone() });
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));

@@ -6,6 +6,7 @@ import { useMyTasks } from '../hooks/useTasks';
 import { daysUntil, dueLabel, fromInputValue } from '../lib/dates';
 import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
+import NotificationBell from '../components/NotificationBell';
 import { 
   FolderOpen, 
   CheckSquare, 
@@ -106,6 +107,7 @@ export default function Dashboard() {
                 <Calendar size={20} />
                 Calendar
               </button>
+              <NotificationBell />
               <button
                 onClick={handleLogout}
                 className="text-gray-600 hover:text-red-600 transition-colors"

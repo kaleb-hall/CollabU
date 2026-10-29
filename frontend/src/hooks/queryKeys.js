@@ -5,5 +5,11 @@ export const queryKeys = {
   projectTasks: (projectId) => ['tasks', 'project', Number(projectId)],
   myTasks: ['tasks', 'mine'],
   calendarBlocks: ['calendar', 'blocks'],
-  users: (search) => ['users', search],
+  activity: (projectId) => ['activity', Number(projectId)],
+  notifications: ['notifications'],
+  unreadCount: ['notifications', 'unread'],
+  notificationList: ['notifications', 'list'],
+  invite: (token) => ['invite', token],
+  projectInvites: (projectId) => ['invites', Number(projectId)],
+  comments: (taskId) => ['comments', Number(taskId)],
 }

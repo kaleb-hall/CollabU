@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { projectService } from '../services/projectService'
-import { userService } from '../services/userService'
 import { queryKeys } from './queryKeys'
 
 export function useProjects() {
@@ -27,22 +26,12 @@ export function useCreateProject() {
   })
 }
 
-export function useAddMember(projectId) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (member) => projectService.addMember(projectId, member),
-    onSuccess: () => Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
-    ]),
-  })
-}
-
-export function useUserSearch(search) {
-  return useQuery({
-    queryKey: queryKeys.users(search),
-    queryFn: () => userService.searchUsers(search),
-    select: (data) => data.users,
-    placeholderData: (previous) => previous,
+export function useActivity(projectId) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.activity(projectId),
+    queryFn: ({ pageParam }) => projectService.getActivity(projectId, pageParam),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    select: (data) => data.pages.flatMap((page) => page.activities),
   })
 }

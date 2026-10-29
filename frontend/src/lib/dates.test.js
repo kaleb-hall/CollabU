@@ -7,6 +7,7 @@ import {
   formatTime,
   fromInputValue,
   parseApiDate,
+  timeAgo,
   toInputValue,
   userTimeZone,
 } from './dates'
@@ -81,4 +82,21 @@ describe('relative labels', () => {
 
 it('reports the browser timezone', () => {
   expect(userTimeZone()).toBe('America/Los_Angeles')
+})
+
+describe('timeAgo', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2030-01-10T18:00:00Z'))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('says just now for the last minute', () => {
+    expect(timeAgo('2030-01-10T17:59:30Z')).toBe('just now')
+  })
+
+  it('uses plain words for older times', () => {
+    expect(timeAgo('2030-01-10T17:55:00Z')).toBe('5 minutes ago')
+    expect(timeAgo('2030-01-08T18:00:00Z')).toBe('2 days ago')
+  })
 })

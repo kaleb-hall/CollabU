@@ -18,13 +18,14 @@ export function useMyTasks() {
   })
 }
 
-// Anything that changes a task changes the board, my tasks, and project progress.
+// Anything that changes a task changes the board, my tasks, project progress and the feed.
 function useInvalidateTasks(projectId) {
   const queryClient = useQueryClient()
   return () => Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(projectId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.myTasks }),
     queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.activity(projectId) }),
   ])
 }
 
