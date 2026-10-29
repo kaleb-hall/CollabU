@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { MotionConfig } from 'motion/react';
 import { IconContext } from '@phosphor-icons/react';
 import { AuthProvider } from './contexts/AuthProvider';
 import { useAuth } from './hooks/useAuth';
@@ -36,8 +35,7 @@ function PageLoading() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Animations follow the system "reduce motion" setting; icons default to duotone */}
-      <MotionConfig reducedMotion="user">
+      {/* Icons default to the duotone style */}
       <IconContext.Provider value={{ weight: 'duotone' }}>
       <BrowserRouter>
         <AuthProvider>
@@ -61,7 +59,6 @@ export default function App() {
         </AuthProvider>
       </BrowserRouter>
       </IconContext.Provider>
-      </MotionConfig>
     </QueryClientProvider>
   );
 }

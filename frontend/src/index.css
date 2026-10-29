@@ -29,6 +29,13 @@
   --shadow-card: var(--elev-card);
   --shadow-lift: var(--elev-lift);
   --radius-card: 0.375rem;
+
+  /* Cards settle in from slightly below (turned off by the reduced motion rule) */
+  --animate-rise: rise 250ms ease-out both;
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
 }
 
 @layer base {

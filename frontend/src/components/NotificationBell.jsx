@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Popover } from '@base-ui/react/popover';
-import { useAnimate, useReducedMotion } from 'motion/react';
+import { useAnimate } from 'motion/react-mini';
+import { prefersReducedMotion } from '../lib/motion';
 import { Bell } from '@phosphor-icons/react';
 import { useMarkAllRead, useMarkRead, useNotificationList, useUnreadCount } from '../hooks/useNotifications';
 import { timeAgo } from '../lib/dates';
@@ -9,8 +10,9 @@ import { cx } from '../lib/cx';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { data: unread = 0 } = useUnreadCount();
-  const scope = useWiggleOnIncrease(unread);
+  const { data } = useUnreadCount();
+  const unread = data ?? 0;
+  const scope = useWiggleOnIncrease(data);
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -38,17 +40,18 @@ export default function NotificationBell() {
   );
 }
 
-// A small shake when the unread count goes up (not on first load, not with reduced motion)
+// A small shake when a new notification arrives while the page is open.
+// `count` is undefined until the first load, so opening a page never shakes it.
 function useWiggleOnIncrease(count) {
   const [scope, animate] = useAnimate();
-  const reduceMotion = useReducedMotion();
   const previous = useRef(count);
   useEffect(() => {
-    if (count > previous.current && !reduceMotion && scope.current) {
+    const arrived = previous.current !== undefined && count > previous.current;
+    if (arrived && !prefersReducedMotion() && scope.current?.animate) {
       animate(scope.current, { rotate: [0, -16, 13, -8, 4, 0] }, { duration: 0.6 });
     }
     previous.current = count;
-  }, [count, reduceMotion, animate, scope]);
+  }, [count, animate, scope]);
   return scope;
 }
 
