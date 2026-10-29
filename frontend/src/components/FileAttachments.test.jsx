@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import FileAttachments from './FileAttachments'
 import { fileService } from '../services/fileService'
 import { renderWithProviders } from '../test/render'
@@ -9,7 +9,7 @@ import { renderWithProviders } from '../test/render'
 vi.mock('../services/fileService', () => ({
   fileService: { list: vi.fn(), upload: vi.fn(), download: vi.fn(), remove: vi.fn() },
 }))
-vi.mock('react-hot-toast', () => ({ default: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }) }))
+vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }) }))
 
 const files = [
   { id: 1, filename: 'mine.pdf', size: 2048, uploader: { id: 1, full_name: 'Ana Lee' }, created_at: new Date().toISOString() },

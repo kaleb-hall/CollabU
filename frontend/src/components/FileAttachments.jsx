@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useAuth } from '../hooks/useAuth';
 import { useDeleteFile, useFiles, useUploadFile } from '../hooks/useFiles';
 import { fileService } from '../services/fileService';

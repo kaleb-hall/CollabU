@@ -5,7 +5,7 @@ import { useCreateProject, useProjects } from '../hooks/useProjects';
 import { useMyTasks } from '../hooks/useTasks';
 import { daysUntil, dueLabel, fromInputValue } from '../lib/dates';
 import { getErrorMessage } from '../lib/errors';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import NotificationBell from '../components/NotificationBell';
 import { 
   FolderOpen, 

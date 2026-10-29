@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getErrorMessage } from '../lib/errors';
 import { getPendingInvite } from '../lib/pendingInvite';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function Login() {
   const [email, setEmail] = useState(() => getPendingInvite()?.email ?? '');

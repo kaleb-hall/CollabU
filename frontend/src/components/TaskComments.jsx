@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useAuth } from '../hooks/useAuth';
 import { useAddComment, useComments, useDeleteComment } from '../hooks/useComments';
 import { timeAgo } from '../lib/dates';

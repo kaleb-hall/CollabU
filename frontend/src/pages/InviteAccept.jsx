@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useAuth } from '../hooks/useAuth';
 import { useAcceptInvite, useInvite } from '../hooks/useInvites';
 import { getErrorMessage } from '../lib/errors';

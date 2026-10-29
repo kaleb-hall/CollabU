@@ -5,7 +5,7 @@ import { useProject } from '../hooks/useProjects';
 import { useCalculateSchedule, useCreateTask, useMoveTask, useProjectTasks, useUpdateTask } from '../hooks/useTasks';
 import { formatDate, formatShortDate, fromInputValue, toInputValue, userTimeZone } from '../lib/dates';
 import { getErrorMessage } from '../lib/errors';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import ActivityFeed from '../components/ActivityFeed';
 import InviteMemberModal from '../components/InviteMemberModal';
 import NotificationBell from '../components/NotificationBell';

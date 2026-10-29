@@ -10,7 +10,7 @@ import { formatDateTime, formatTime, parseApiDate, toInputValue } from '../lib/d
 import { WEEKDAYS, buildBlockPayload, describeRepeat, weekdayCode } from '../lib/blockForm';
 import { normalizeRange, weekRange } from '../lib/calendarRange';
 import { getErrorMessage } from '../lib/errors';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import NotificationBell from '../components/NotificationBell';
 import {
   ArrowLeft,
