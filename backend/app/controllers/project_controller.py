@@ -10,9 +10,10 @@ from app.schemas.project_schema import (
     TaskSummarySchema,
 )
 from app.models import Activity
-from app.services import activity_service, deadline_service, project_service, task_templates
+from app.services import activity_service, deadline_service, project_service, task_templates, workload_service
 from app.utils.auth import current_user_id
 from app.utils.pagination import PageArgsSchema, paginate
+from app.utils.time import iso_utc
 from app.utils.permissions import project_access
 from app.utils.request_data import load_json
 
@@ -100,3 +101,10 @@ def list_activity(project):
     args = PageArgsSchema().load(request.args)
     activities, next_cursor = paginate(activity_service.feed_query(project), Activity, args)
     return jsonify({'activities': ActivitySchema(many=True).dump(activities), 'next_cursor': next_cursor}), 200
+
+
+@project_bp.route('/<int:project_id>/workload', methods=['GET'])
+@project_access()
+def get_workload(project):
+    week_start, week_end, members = workload_service.project_workload(project, current_user_id())
+    return jsonify({'week_start': iso_utc(week_start), 'week_end': iso_utc(week_end), 'members': members}), 200
