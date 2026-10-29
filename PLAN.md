@@ -155,6 +155,20 @@ Plan:
 
 Not touching the look in phase 1. Pages keep their current design until phase 3.
 
+### Phase 1 results (done, branch `phase-1-audit`)
+
+| Measure | Before | After |
+|---|---|---|
+| Backend tests | 0 | 82 |
+| Frontend tests | 0 | 21 |
+| Lint problems | 11 | 0 |
+| JS to open login (gzipped) | 175.9 kB | 101.8 kB |
+| JS to open dashboard (gzipped) | 175.9 kB | 117.1 kB |
+| JS to open calendar (gzipped) | 175.9 kB | 171.4 kB (calendar library now only loads here) |
+| Queries for project list, 5 projects | 10 and growing | 6, flat |
+
+Answers used: keep existing assignees, 9:00 to 17:00 every day in the user's timezone, save overlapping blocks with a warning, delete the stale files, Python 3.12, "Suggested tasks" wording.
+
 ---
 
 ## Phase 2: missing features
