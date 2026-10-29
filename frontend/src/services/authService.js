@@ -31,17 +31,5 @@ export const authService = {
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
-  },
-
-  // Check if user is authenticated
-  isAuthenticated: () => {
-    return !!localStorage.getItem('access_token');
-  },
-
-  // Get current user from API
-  me: async () => {
-    const response = await api.get('/auth/me');
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    return response.data;
-  },
+  }
 };

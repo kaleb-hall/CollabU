@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { projectService } from '../services/projectService';
-import { taskService } from '../services/taskService';
+import { useAuth } from '../hooks/useAuth';
+import { useCreateProject, useProjects } from '../hooks/useProjects';
+import { useMyTasks } from '../hooks/useTasks';
+import { daysUntil, dueLabel, fromInputValue } from '../lib/dates';
+import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
 import { 
   FolderOpen, 
   CheckSquare, 
   Calendar, 
-  Clock,
   LogOut,
   Plus,
   Lightbulb,
@@ -25,31 +26,13 @@ import {
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState([]);
-  const [myTasks, setMyTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const projectsQuery = useProjects();
+  const myTasksQuery = useMyTasks();
+  const projects = projectsQuery.data ?? [];
+  const myTasks = myTasksQuery.data ?? [];
+  const loading = projectsQuery.isPending || myTasksQuery.isPending;
+  const loadError = projectsQuery.error || myTasksQuery.error;
   const [showAddProject, setShowAddProject] = useState(false);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const [projectsData, tasksData] = await Promise.all([
-        projectService.getProjects(),
-        taskService.getMyTasks()
-      ]);
-      
-      setProjects(projectsData.projects || []);
-      setMyTasks(tasksData.tasks || []);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -57,9 +40,9 @@ export default function Dashboard() {
     toast.success('Logged out successfully');
   };
 
+  // My tasks arrive sorted by due date
   const upcomingTasks = myTasks
     .filter(task => task.status !== 'completed')
-    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
     .slice(0, 5);
 
   const activeProjects = projects.filter(p => p.status === 'active');
@@ -70,6 +53,23 @@ export default function Dashboard() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
           <p className="mt-4 text-white">Loading your workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm">
+          <p className="text-gray-900 font-semibold mb-2">Could not load your dashboard</p>
+          <p className="text-sm text-gray-600 mb-4">{getErrorMessage(loadError)}</p>
+          <button
+            onClick={() => { projectsQuery.refetch(); myTasksQuery.refetch(); }}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -187,10 +187,7 @@ export default function Dashboard() {
       {showAddProject && (
         <AddProjectModal
           onClose={() => setShowAddProject(false)}
-          onSuccess={() => {
-            setShowAddProject(false);
-            loadData();
-          }}
+          onSuccess={() => setShowAddProject(false)}
         />
       )}
     </div>
@@ -199,15 +196,10 @@ export default function Dashboard() {
 
 // Project Card Component
 function ProjectCard({ project, onClick }) {
-  const totalTasks = project.tasks?.length || 0;
-  const completedTasks = project.tasks?.filter(t => t.status === 'completed').length || 0;
-  const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-  
-  const daysUntilDeadline = Math.ceil(
-    (new Date(project.deadline) - new Date()) / (1000 * 60 * 60 * 24)
-  );
-
-  const nextTask = project.tasks?.find(t => t.status !== 'completed');
+  const { total, completed } = project.task_counts;
+  const progress = total > 0 ? (completed / total) * 100 : 0;
+  const daysUntilDeadline = daysUntil(project.deadline);
+  const nextTask = project.next_task;
 
   const getProgressColor = () => {
     if (progress >= 75) return 'bg-teal-500';
@@ -255,22 +247,7 @@ function ProjectCard({ project, onClick }) {
 
 // Upcoming Task Card
 function UpcomingTaskCard({ task }) {
-  const dueDate = new Date(task.due_date);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  const isToday = dueDate.toDateString() === today.toDateString();
-  const isTomorrow = dueDate.toDateString() === tomorrow.toDateString();
-  
-  let timeString = '';
-  if (isToday) {
-    timeString = `Today, ${dueDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-  } else if (isTomorrow) {
-    timeString = `Tomorrow, ${dueDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-  } else {
-    timeString = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  const timeString = dueLabel(task.due_date);
 
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
@@ -299,7 +276,8 @@ function AddProjectModal({ onClose, onSuccess }) {
     description: '',
     deadline: '',
   });
-  const [loading, setLoading] = useState(false);
+  const createProject = useCreateProject();
+  const loading = createProject.isPending;
 
   const templates = [
     {
@@ -373,40 +351,24 @@ function AddProjectModal({ onClose, onSuccess }) {
     setStep(2);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
+    const autoGenerate = selectedTemplate?.id !== 'custom';
 
-    try {
-      const autoGenerate = selectedTemplate?.id !== 'custom';
-      
-      console.log('Submitting project:', {
-        ...formData,
-        deadline: new Date(formData.deadline).toISOString(),
-        auto_generate_tasks: autoGenerate
-      });
-
-      const response = await projectService.createProject({
-        ...formData,
-        deadline: new Date(formData.deadline).toISOString(),
-        auto_generate_tasks: autoGenerate
-      });
-      
-      console.log('Project created:', response);
-      
-      toast.success(
-        autoGenerate 
-          ? `Project created with AI-generated tasks!`
-          : 'Project created successfully!'
-      );
-      onSuccess();
-    } catch (error) {
-      console.error('Error creating project:', error);
-      console.error('Error response:', error.response?.data);
-      toast.error(error.response?.data?.error || 'Failed to create project');
-    } finally {
-      setLoading(false);
-    }
+    createProject.mutate({
+      ...formData,
+      deadline: fromInputValue(formData.deadline),
+      auto_generate_tasks: autoGenerate,
+      template: autoGenerate ? selectedTemplate.id : null,
+    }, {
+      onSuccess: (data) => {
+        toast.success(autoGenerate
+          ? `Project created with ${data.suggestions?.tasks_created ?? 0} suggested tasks`
+          : 'Project created');
+        onSuccess();
+      },
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not create the project')),
+    });
   };
 
   const colorClasses = {
@@ -541,7 +503,7 @@ function AddProjectModal({ onClose, onSuccess }) {
                     <Lightbulb className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                     <div>
                       <p className="text-sm font-semibold text-blue-900 mb-1">
-                        AI Task Generation Enabled
+                        Suggested tasks
                       </p>
                       <p className="text-xs text-blue-700">
                         CollabU will automatically create {selectedTemplate?.estimatedHours > 0 ? `~${selectedTemplate.estimatedHours}h of ` : ''}tasks 

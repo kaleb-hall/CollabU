@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { projectService } from '../services/projectService';
-import { taskService } from '../services/taskService';
-import { userService } from '../services/userService';
-import { useAuth } from '../contexts/AuthContext';
-import { format } from 'date-fns';
+import { useAuth } from '../hooks/useAuth';
+import { useAddMember, useProject, useUserSearch } from '../hooks/useProjects';
+import { useCalculateSchedule, useCreateTask, useMoveTask, useProjectTasks, useUpdateTask } from '../hooks/useTasks';
+import { formatDate, formatShortDate, fromInputValue, parseApiDate, toInputValue, userTimeZone } from '../lib/dates';
+import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
+
+const STATUS_COLUMNS = [
+  { value: 'todo', label: 'To Do', color: 'gray' },
+  { value: 'in_progress', label: 'In Progress', color: 'blue' },
+  { value: 'review', label: 'Review', color: 'purple' },
+  { value: 'blocked', label: 'Blocked', color: 'red' },
+  { value: 'completed', label: 'Completed', color: 'teal' },
+];
 import {
   ArrowLeft,
   Calendar,
@@ -24,82 +32,38 @@ export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const [project, setProject] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [calculatingSchedule, setCalculatingSchedule] = useState(false);
+  const projectQuery = useProject(id);
+  const tasksQuery = useProjectTasks(id);
+  const project = projectQuery.data;
+  const tasks = tasksQuery.data ?? [];
+  const loading = projectQuery.isPending || tasksQuery.isPending;
+  const loadError = projectQuery.error || tasksQuery.error;
+
+  const schedule = useCalculateSchedule(id);
+  const moveTask = useMoveTask(id);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAddMember, setShowAddMember] = useState(false);
 
-  useEffect(() => {
-    loadProjectData();
-  }, [id]);
-
-  const loadProjectData = async () => {
-    try {
-      const [projectData, tasksData] = await Promise.all([
-        projectService.getProject(id),
-        taskService.getProjectTasks(id)
-      ]);
-      
-      setProject(projectData.project);
-      setTasks(tasksData.tasks || []);
-    } catch (error) {
-      console.error('Error loading project:', error);
-      toast.error('Failed to load project');
-      navigate('/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCalculateSchedule = async () => {
+  const handleCalculateSchedule = () => {
     if (tasks.length === 0) {
-      toast.error('Add some tasks first!');
+      toast.error('Add some tasks first');
       return;
     }
-
-    setCalculatingSchedule(true);
-    try {
-      const result = await taskService.calculateSchedule(id);
-      toast.success('🎯 Schedule calculated successfully!', { duration: 4000 });
-      
-      if (result.warnings && result.warnings.length > 0) {
-        result.warnings.forEach(warning => {
-          toast(warning, { 
-            icon: '⚠️',
-            duration: 6000,
-          });
-        });
-      }
-      
-      const tasksData = await taskService.getProjectTasks(id);
-      setTasks(tasksData.tasks || []);
-    } catch (error) {
-      console.error('Error calculating schedule:', error);
-      toast.error('Failed to calculate schedule');
-    } finally {
-      setCalculatingSchedule(false);
-    }
+    schedule.mutate(userTimeZone(), {
+      onSuccess: (result) => {
+        toast.success('Schedule calculated');
+        result.warnings.forEach((warning) => toast(warning, { duration: 6000 }));
+      },
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not calculate the schedule')),
+    });
   };
 
-  const updateTaskStatus = async (taskId, newStatus) => {
-    try {
-      await taskService.updateTaskStatus(taskId, newStatus);
-      toast.success('Task updated!');
-      
-      setTasks(tasks.map(t => 
-        t.id === taskId ? { 
-          ...t, 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        } : t
-      ));
-    } catch (error) {
-      toast.error('Failed to update task');
-    }
+  const updateTaskStatus = (taskId, status) => {
+    moveTask.mutate({ taskId, status }, {
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not move the task')),
+    });
   };
 
   const handleEditTask = (task) => {
@@ -118,20 +82,32 @@ export default function ProjectDetail() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm">
+          <p className="text-gray-900 font-semibold mb-2">Could not open this project</p>
+          <p className="text-sm text-gray-600 mb-4">{getErrorMessage(loadError)}</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg"
+          >
+            Back to dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  const tasksByStatus = {
-    todo: tasks.filter(t => t.status === 'todo'),
-    in_progress: tasks.filter(t => t.status === 'in_progress'),
-    completed: tasks.filter(t => t.status === 'completed'),
-  };
 
   const teamMembers = project.members || [];
 
-  const recentActivity = tasks
-    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+  const recentActivity = [...tasks]
+    .sort((a, b) => parseApiDate(b.updated_at) - parseApiDate(a.updated_at))
     .slice(0, 8)
     .map(task => {
       const userName = task.assignee 
@@ -190,22 +166,22 @@ export default function ProjectDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={16} />
-                  <span>Started: {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span>Started: {formatDate(project.created_at)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={16} />
-                  <span>Due: {new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span>Due: {formatDate(project.deadline)}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={handleCalculateSchedule}
-              disabled={calculatingSchedule}
+              disabled={schedule.isPending}
               className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
-              <Sparkles size={20} className={calculatingSchedule ? 'animate-spin' : ''} />
-              {calculatingSchedule ? 'Calculating...' : 'Calculate Schedule'}
+              <Sparkles size={20} className={schedule.isPending ? 'animate-spin' : ''} />
+              {schedule.isPending ? 'Calculating...' : 'Calculate Schedule'}
             </button>
           </div>
 
@@ -249,31 +225,17 @@ export default function ProjectDetail() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <TaskColumn
-                  title="To Do"
-                  tasks={tasksByStatus.todo}
-                  color="gray"
-                  onStatusChange={updateTaskStatus}
-                  onEditTask={handleEditTask}
-                  currentUser={currentUser}
-                />
-                <TaskColumn
-                  title="In Progress"
-                  tasks={tasksByStatus.in_progress}
-                  color="blue"
-                  onStatusChange={updateTaskStatus}
-                  onEditTask={handleEditTask}
-                  currentUser={currentUser}
-                />
-                <TaskColumn
-                  title="Completed"
-                  tasks={tasksByStatus.completed}
-                  color="teal"
-                  onStatusChange={updateTaskStatus}
-                  onEditTask={handleEditTask}
-                  currentUser={currentUser}
-                />
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {STATUS_COLUMNS.map((column) => (
+                  <TaskColumn
+                    key={column.value}
+                    title={column.label}
+                    tasks={tasks.filter((t) => t.status === column.value)}
+                    color={column.color}
+                    onStatusChange={updateTaskStatus}
+                    onEditTask={handleEditTask}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -345,10 +307,7 @@ export default function ProjectDetail() {
         <AddTaskModal
           projectId={id}
           onClose={() => setShowAddTask(false)}
-          onSuccess={() => {
-            setShowAddTask(false);
-            loadProjectData();
-          }}
+          onSuccess={() => setShowAddTask(false)}
         />
       )}
 
@@ -363,7 +322,6 @@ export default function ProjectDetail() {
           onSuccess={() => {
             setShowEditTask(false);
             setSelectedTask(null);
-            loadProjectData();
           }}
         />
       )}
@@ -374,10 +332,7 @@ export default function ProjectDetail() {
           projectId={id}
           existingMembers={teamMembers}
           onClose={() => setShowAddMember(false)}
-          onSuccess={() => {
-            setShowAddMember(false);
-            loadProjectData();
-          }}
+          onSuccess={() => setShowAddMember(false)}
         />
       )}
     </div>
@@ -385,15 +340,17 @@ export default function ProjectDetail() {
 }
 
 // Task Column Component
-function TaskColumn({ title, tasks, color, onStatusChange, onEditTask, currentUser }) {
+function TaskColumn({ title, tasks, color, onStatusChange, onEditTask }) {
   const colorClasses = {
     gray: 'bg-gray-400',
     blue: 'bg-blue-500',
+    purple: 'bg-purple-500',
+    red: 'bg-red-500',
     teal: 'bg-teal-500',
   };
 
   return (
-    <div>
+    <div className="min-w-[16rem] flex-1">
       <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
         <span className={`w-3 h-3 rounded-full ${colorClasses[color]}`} />
         {title} ({tasks.length})
@@ -405,7 +362,6 @@ function TaskColumn({ title, tasks, color, onStatusChange, onEditTask, currentUs
             task={task}
             onStatusChange={onStatusChange}
             onEditTask={onEditTask}
-            currentUser={currentUser}
           />
         ))}
       </div>
@@ -414,7 +370,7 @@ function TaskColumn({ title, tasks, color, onStatusChange, onEditTask, currentUs
 }
 
 // Task Card Component
-function TaskCard({ task, onStatusChange, onEditTask, currentUser }) {
+function TaskCard({ task, onStatusChange, onEditTask }) {
   const [showActions, setShowActions] = useState(false);
 
   const priorityColors = {
@@ -424,11 +380,6 @@ function TaskCard({ task, onStatusChange, onEditTask, currentUser }) {
     low: 'border-green-500 bg-green-50',
   };
 
-  const statusOptions = [
-    { value: 'todo', label: 'To Do' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'completed', label: 'Completed' },
-  ];
 
   return (
     <div 
@@ -464,7 +415,7 @@ function TaskCard({ task, onStatusChange, onEditTask, currentUser }) {
         {task.due_date && (
           <div className="flex items-center gap-2">
             <Clock size={14} />
-            <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+            <span>Due: {formatShortDate(task.due_date)}</span>
           </div>
         )}
 
@@ -487,7 +438,7 @@ function TaskCard({ task, onStatusChange, onEditTask, currentUser }) {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             onClick={(e) => e.stopPropagation()}
           >
-            {statusOptions.map(option => (
+            {STATUS_COLUMNS.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -540,27 +491,22 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
     estimated_hours: '',
     priority: 'medium',
   });
-  const [loading, setLoading] = useState(false);
+  const createTask = useCreateTask(projectId);
+  const loading = createTask.isPending;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      await taskService.createTask(projectId, {
-        ...formData,
-        due_date: new Date(formData.due_date).toISOString(),
-        estimated_hours: parseFloat(formData.estimated_hours) || null,
-      });
-      
-      toast.success('Task created successfully!');
-      onSuccess();
-    } catch (error) {
-      console.error('Error creating task:', error);
-      toast.error('Failed to create task');
-    } finally {
-      setLoading(false);
-    }
+    createTask.mutate({
+      ...formData,
+      due_date: fromInputValue(formData.due_date),
+      estimated_hours: parseFloat(formData.estimated_hours) || null,
+    }, {
+      onSuccess: () => {
+        toast.success('Task created');
+        onSuccess();
+      },
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not create the task')),
+    });
   };
 
   return (
@@ -669,31 +615,29 @@ function EditTaskModal({ task, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     title: task.title || '',
     description: task.description || '',
-    due_date: task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd'T'HH:mm") : '',
+    due_date: toInputValue(task.due_date),
     estimated_hours: task.estimated_hours || '',
     priority: task.priority || 'medium',
   });
-  const [loading, setLoading] = useState(false);
+  const updateTask = useUpdateTask(task.project_id);
+  const loading = updateTask.isPending;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      await taskService.updateTask(task.id, {
+    updateTask.mutate({
+      taskId: task.id,
+      changes: {
         ...formData,
-        due_date: new Date(formData.due_date).toISOString(),
+        due_date: fromInputValue(formData.due_date),
         estimated_hours: parseFloat(formData.estimated_hours) || null,
-      });
-      
-      toast.success('Task updated successfully!');
-      onSuccess();
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast.error('Failed to update task');
-    } finally {
-      setLoading(false);
-    }
+      },
+    }, {
+      onSuccess: () => {
+        toast.success('Task updated');
+        onSuccess();
+      },
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not update the task')),
+    });
   };
 
   return (
@@ -797,68 +741,29 @@ function EditTaskModal({ task, onClose, onSuccess }) {
 // Add Member Modal Component (keeping from before)
 function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [allUsers, setAllUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState('member');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const usersQuery = useUserSearch(searchQuery.trim());
+  const addMember = useAddMember(projectId);
+  const loading = usersQuery.isPending;
+  const submitting = addMember.isPending;
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  const existingUserIds = existingMembers.map(m => m.user_id);
+  const filteredUsers = (usersQuery.data ?? []).filter(u => !existingUserIds.includes(u.id));
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      const filtered = allUsers.filter(user => {
-        const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-        const email = user.email.toLowerCase();
-        const query = searchQuery.toLowerCase();
-        return fullName.includes(query) || email.includes(query);
-      });
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(allUsers);
-    }
-  }, [searchQuery, allUsers]);
-
-  const loadUsers = async () => {
-    try {
-      const response = await userService.getAllUsers();
-      const existingUserIds = existingMembers.map(m => m.user_id);
-      const availableUsers = response.users.filter(u => !existingUserIds.includes(u.id));
-      setAllUsers(availableUsers);
-      setFilteredUsers(availableUsers);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedUser) {
       toast.error('Please select a user');
       return;
     }
-
-    setSubmitting(true);
-    try {
-      await projectService.addMember(projectId, {
-        user_id: selectedUser.id,
-        role: selectedRole
-      });
-      
-      toast.success('Team member added successfully!');
-      onSuccess();
-    } catch (error) {
-      console.error('Error adding member:', error);
-      toast.error(error.response?.data?.error || 'Failed to add member');
-    } finally {
-      setSubmitting(false);
-    }
+    addMember.mutate({ user_id: selectedUser.id, role: selectedRole }, {
+      onSuccess: () => {
+        toast.success('Team member added');
+        onSuccess();
+      },
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not add the member')),
+    });
   };
 
   return (
@@ -974,7 +879,7 @@ function AddMemberModal({ projectId, existingMembers, onClose, onSuccess }) {
 
 // Helper function for relative time
 function getRelativeTime(dateString) {
-  const date = new Date(dateString);
+  const date = parseApiDate(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now - date) / 1000);
   
@@ -983,5 +888,5 @@ function getRelativeTime(dateString) {
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
   if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
-  return date.toLocaleDateString();
+  return formatDate(date);
 }

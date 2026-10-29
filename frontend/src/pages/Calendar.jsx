@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addHours, setHours, setMinutes } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
+import { format, parse, startOfWeek, getDay, addDays, addHours, setHours, setMinutes } from 'date-fns';
+import { enUS } from 'date-fns/locale/en-US';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { taskService } from '../services/taskService';
-import { projectService } from '../services/projectService';
-import { calendarService } from '../services/calendarService';
+import { useCalendarBlocks, useCreateBlock, useDeleteBlock } from '../hooks/useCalendarBlocks';
+import { useProjects } from '../hooks/useProjects';
+import { useMyTasks } from '../hooks/useTasks';
+import { formatDateTime, formatTime, fromInputValue, parseApiDate, toInputValue } from '../lib/dates';
+import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -48,37 +49,17 @@ const getBlockColor = (blockType) => {
 
 export default function Calendar() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [myTasks, setMyTasks] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [calendarBlocks, setCalendarBlocks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const tasksQuery = useMyTasks();
+  const projectsQuery = useProjects();
+  const blocksQuery = useCalendarBlocks();
+  const deleteBlock = useDeleteBlock();
+  const myTasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
+  const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
+  const calendarBlocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
+  const loading = tasksQuery.isPending || projectsQuery.isPending || blocksQuery.isPending;
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  useEffect(() => {
-    loadCalendarData();
-  }, []);
-
-  const loadCalendarData = async () => {
-    try {
-      const [tasksData, projectsData, blocksData] = await Promise.all([
-        taskService.getMyTasks(),
-        projectService.getProjects(),
-        calendarService.getCalendarBlocks()
-      ]);
-
-      setMyTasks(tasksData.tasks || []);
-      setProjects(projectsData.projects || []);
-      setCalendarBlocks(blocksData.blocks || []);
-    } catch (error) {
-      console.error('Error loading calendar data:', error);
-      toast.error('Failed to load calendar');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Convert tasks and blocks to calendar events
   const events = useMemo(() => {
@@ -89,16 +70,12 @@ export default function Calendar() {
       let startDate, endDate;
       
       if (task.start_date) {
-        startDate = new Date(task.start_date);
+        startDate = parseApiDate(task.start_date);
       } else {
-        // If no start date, show task on due date
-        const dueDate = new Date(task.due_date);
-        // Set to 9 AM on the due date
-        startDate = setHours(setMinutes(dueDate, 0), 9);
+        // If no start date, show task at 9 AM on the due date
+        startDate = setHours(setMinutes(parseApiDate(task.due_date), 0), 9);
       }
-      
-      const taskDueDate = new Date(task.due_date);
-      
+
       // If the task has estimated hours, use that for the duration
       if (task.estimated_hours) {
         endDate = addHours(startDate, task.estimated_hours);
@@ -130,8 +107,8 @@ export default function Calendar() {
     const blockEvents = calendarBlocks.map(block => ({
       id: `block-${block.id}`,
       title: block.title,
-      start: new Date(block.start_time),
-      end: new Date(block.end_time),
+      start: parseApiDate(block.start_time),
+      end: parseApiDate(block.end_time),
       type: 'block',
       data: block,
       color: getBlockColor(block.block_type),
@@ -142,7 +119,7 @@ export default function Calendar() {
     return [...taskEvents, ...blockEvents];
   }, [myTasks, projects, calendarBlocks]);
 
-  const handleSelectSlot = ({ start, end }) => {
+  const handleSelectSlot = ({ start }) => {
     setSelectedDate(start);
     setShowAddBlock(true);
   };
@@ -150,6 +127,13 @@ export default function Calendar() {
   const handleSelectEvent = (event) => {
     setSelectedEvent(event);
   };
+
+  const now = new Date();
+  const weekFromNow = addDays(now, 7);
+  const thisWeek = myTasks.filter((task) => {
+    const due = parseApiDate(task.due_date);
+    return due >= now && due <= weekFromNow && task.status !== 'completed';
+  });
 
   const eventStyleGetter = (event) => {
     const style = {
@@ -252,7 +236,7 @@ export default function Calendar() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">Tasks by Project</p>
-                  {projects.slice(0, 6).map((project, i) => (
+                  {projects.slice(0, 6).map((project) => (
                     <div key={project.id} className="flex items-center gap-2 mb-2">
                       <div 
                         className="w-4 h-4 rounded"
@@ -289,14 +273,7 @@ export default function Calendar() {
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4">This Week</h3>
               <div className="space-y-3">
-                {myTasks
-                  .filter(task => {
-                    const dueDate = new Date(task.due_date);
-                    const now = new Date();
-                    const weekFromNow = new Date();
-                    weekFromNow.setDate(weekFromNow.getDate() + 7);
-                    return dueDate >= now && dueDate <= weekFromNow && task.status !== 'completed';
-                  })
+                {thisWeek
                   .slice(0, 5)
                   .map(task => (
                     <div key={task.id} className="p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -305,23 +282,13 @@ export default function Calendar() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">{task.title}</p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {new Date(task.due_date).toLocaleDateString('en-US', { 
-                              weekday: 'short',
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
+                            {format(parseApiDate(task.due_date), 'EEE, MMM d')}
                           </p>
                         </div>
                       </div>
                     </div>
                   ))}
-                {myTasks.filter(t => {
-                  const dueDate = new Date(t.due_date);
-                  const now = new Date();
-                  const weekFromNow = new Date();
-                  weekFromNow.setDate(weekFromNow.getDate() + 7);
-                  return dueDate >= now && dueDate <= weekFromNow && t.status !== 'completed';
-                }).length === 0 && (
+                {thisWeek.length === 0 && (
                   <p className="text-sm text-gray-500">No tasks this week</p>
                 )}
               </div>
@@ -335,17 +302,14 @@ export default function Calendar() {
         <EventDetailModal
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
-          onDelete={async () => {
-            if (selectedEvent.type === 'block') {
-              try {
-                await calendarService.deleteCalendarBlock(selectedEvent.data.id);
+          onDelete={() => {
+            deleteBlock.mutate(selectedEvent.data.id, {
+              onSuccess: () => {
                 toast.success('Busy time deleted');
-                loadCalendarData();
                 setSelectedEvent(null);
-              } catch (error) {
-                toast.error('Failed to delete');
-              }
-            }
+              },
+              onError: (error) => toast.error(getErrorMessage(error, 'Could not delete')),
+            });
           }}
         />
       )}
@@ -355,10 +319,7 @@ export default function Calendar() {
         <AddBlockModal
           initialDate={selectedDate}
           onClose={() => setShowAddBlock(false)}
-          onSuccess={() => {
-            setShowAddBlock(false);
-            loadCalendarData();
-          }}
+          onSuccess={() => setShowAddBlock(false)}
         />
       )}
     </div>
@@ -424,7 +385,7 @@ function EventDetailModal({ event, onClose, onDelete }) {
                 <p className="text-sm font-medium text-gray-700 mb-1">Scheduled Time</p>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Clock size={16} />
-                  <span>{event.start.toLocaleString()} - {event.end.toLocaleTimeString()}</span>
+                  <span>{formatDateTime(event.start)} to {formatTime(event.end)}</span>
                 </div>
               </div>
 
@@ -466,9 +427,9 @@ function EventDetailModal({ event, onClose, onDelete }) {
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-1">Time</p>
                 <div className="text-sm text-gray-600">
-                  <p>{event.start.toLocaleString()}</p>
+                  <p>{formatDateTime(event.start)}</p>
                   <p className="text-gray-500">to</p>
-                  <p>{event.end.toLocaleString()}</p>
+                  <p>{formatDateTime(event.end)}</p>
                 </div>
               </div>
 
@@ -498,31 +459,27 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    start_time: format(initialDate, "yyyy-MM-dd'T'HH:mm"),
-    end_time: format(addHours(initialDate, 1), "yyyy-MM-dd'T'HH:mm"),
+    start_time: toInputValue(initialDate),
+    end_time: toInputValue(addHours(initialDate, 1)),
     block_type: 'busy',
   });
-  const [loading, setLoading] = useState(false);
+  const createBlock = useCreateBlock();
+  const loading = createBlock.isPending;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      await calendarService.createCalendarBlock({
-        ...formData,
-        start_time: new Date(formData.start_time).toISOString(),
-        end_time: new Date(formData.end_time).toISOString(),
-      });
-
-      toast.success('Busy time added!');
-      onSuccess();
-    } catch (error) {
-      console.error('Error creating block:', error);
-      toast.error('Failed to add busy time');
-    } finally {
-      setLoading(false);
-    }
+    createBlock.mutate({
+      ...formData,
+      start_time: fromInputValue(formData.start_time),
+      end_time: fromInputValue(formData.end_time),
+    }, {
+      onSuccess: (data) => {
+        toast.success('Busy time added');
+        data.warnings.forEach((warning) => toast(warning));
+        onSuccess();
+      },
+      onError: (error) => toast.error(getErrorMessage(error, 'Could not add busy time')),
+    });
   };
 
   return (
