@@ -26,6 +26,7 @@ function useInvalidateTasks(projectId) {
     queryClient.invalidateQueries({ queryKey: queryKeys.myTasks }),
     queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
     queryClient.invalidateQueries({ queryKey: queryKeys.activity(projectId) }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.workload(projectId) }),
   ])
 }
 

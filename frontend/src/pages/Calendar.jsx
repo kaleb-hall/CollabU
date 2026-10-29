@@ -6,7 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { useCalendarBlocks, useCreateBlock, useDeleteBlock } from '../hooks/useCalendarBlocks';
 import { useProjects } from '../hooks/useProjects';
 import { useMyTasks } from '../hooks/useTasks';
-import { formatDateTime, formatTime, fromInputValue, parseApiDate, toInputValue } from '../lib/dates';
+import { formatDateTime, formatTime, parseApiDate, toInputValue } from '../lib/dates';
+import { WEEKDAYS, buildBlockPayload, describeRepeat, weekdayCode } from '../lib/blockForm';
+import { normalizeRange, weekRange } from '../lib/calendarRange';
 import { getErrorMessage } from '../lib/errors';
 import toast from 'react-hot-toast';
 import NotificationBell from '../components/NotificationBell';
@@ -52,7 +54,8 @@ export default function Calendar() {
   const navigate = useNavigate();
   const tasksQuery = useMyTasks();
   const projectsQuery = useProjects();
-  const blocksQuery = useCalendarBlocks();
+  const [range, setRange] = useState(() => weekRange(new Date()));
+  const blocksQuery = useCalendarBlocks(range);
   const deleteBlock = useDeleteBlock();
   const myTasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
@@ -106,7 +109,7 @@ export default function Calendar() {
     });
 
     const blockEvents = calendarBlocks.map(block => ({
-      id: `block-${block.id}`,
+      id: `block-${block.id}-${block.start_time}`,
       title: block.title,
       start: parseApiDate(block.start_time),
       end: parseApiDate(block.end_time),
@@ -219,6 +222,7 @@ export default function Calendar() {
                 style={{ height: '100%' }}
                 onSelectSlot={handleSelectSlot}
                 onSelectEvent={handleSelectEvent}
+                onRangeChange={(visible) => setRange(normalizeRange(visible))}
                 selectable
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
@@ -437,11 +441,18 @@ function EventDetailModal({ event, onClose, onDelete }) {
                 </div>
               </div>
 
+              {event.data.is_recurring && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Repeats</p>
+                  <p className="text-sm text-gray-600">{describeRepeat(event.data)}</p>
+                </div>
+              )}
+
               <button
                 onClick={onDelete}
                 className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                Delete Busy Time
+                {event.data.is_recurring ? 'Delete every repeat' : 'Delete Busy Time'}
               </button>
             </>
           )}
@@ -466,17 +477,16 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
     start_time: toInputValue(initialDate),
     end_time: toInputValue(addHours(initialDate, 1)),
     block_type: 'busy',
+    repeats: false,
+    repeat_days: [],
+    repeat_until: '',
   });
   const createBlock = useCreateBlock();
   const loading = createBlock.isPending;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createBlock.mutate({
-      ...formData,
-      start_time: fromInputValue(formData.start_time),
-      end_time: fromInputValue(formData.end_time),
-    }, {
+    createBlock.mutate(buildBlockPayload(formData), {
       onSuccess: (data) => {
         toast.success('Busy time added');
         data.warnings.forEach((warning) => toast(warning));
@@ -565,6 +575,8 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
             </div>
           </div>
 
+          <RepeatFields formData={formData} setFormData={setFormData} />
+
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -584,5 +596,61 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
         </form>
       </div>
     </div>
+  );
+}
+
+// Weekly repeat: pick weekdays and the last date. Edits and deletes apply to every repeat.
+function RepeatFields({ formData, setFormData }) {
+  const toggleRepeats = (checked) => setFormData({
+    ...formData,
+    repeats: checked,
+    repeat_days: checked && formData.repeat_days.length === 0 ? [weekdayCode(formData.start_time)] : formData.repeat_days,
+  });
+
+  const toggleDay = (code) => setFormData({
+    ...formData,
+    repeat_days: formData.repeat_days.includes(code)
+      ? formData.repeat_days.filter((day) => day !== code)
+      : [...formData.repeat_days, code],
+  });
+
+  return (
+    <fieldset className="space-y-3">
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+        <input type="checkbox" checked={formData.repeats} onChange={(e) => toggleRepeats(e.target.checked)} />
+        Repeats every week
+      </label>
+      {formData.repeats && (
+        <>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Repeat on">
+            {WEEKDAYS.map((day) => (
+              <button
+                key={day.code}
+                type="button"
+                aria-pressed={formData.repeat_days.includes(day.code)}
+                onClick={() => toggleDay(day.code)}
+                className={`px-3 py-1 rounded-lg border text-sm ${
+                  formData.repeat_days.includes(day.code) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
+                }`}
+              >
+                {day.label}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label htmlFor="repeat-until" className="block text-sm font-medium text-gray-700 mb-2">Until</label>
+            <input
+              id="repeat-until"
+              type="date"
+              required
+              min={formData.start_time.slice(0, 10)}
+              value={formData.repeat_until}
+              onChange={(e) => setFormData({ ...formData, repeat_until: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+        </>
+      )}
+    </fieldset>
   );
 }

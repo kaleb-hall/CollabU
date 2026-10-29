@@ -8,7 +8,7 @@ import { AuthContext } from '../contexts/authContext'
 export function renderWithProviders(ui, { user = null, route = '/', path = '*', auth = {} } = {}) {
   const queryClient = createQueryClient()
   queryClient.setDefaultOptions({ queries: { retry: false, staleTime: 0 } })
-  const authValue = { user, isAuthenticated: !!user, login: async () => {}, register: async () => {}, logout: () => {}, ...auth }
+  const authValue = { user, isAuthenticated: !!user, login: async () => {}, register: async () => {}, logout: () => {}, updateUser: () => {}, ...auth }
   const result = render(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={authValue}>

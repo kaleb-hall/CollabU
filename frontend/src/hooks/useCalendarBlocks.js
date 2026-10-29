@@ -2,11 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { calendarService } from '../services/calendarService'
 import { queryKeys } from './queryKeys'
 
-export function useCalendarBlocks() {
+export function useCalendarBlocks({ start, end }) {
   return useQuery({
-    queryKey: queryKeys.calendarBlocks,
-    queryFn: () => calendarService.getCalendarBlocks(),
+    queryKey: queryKeys.calendarRange(start, end),
+    queryFn: () => calendarService.getCalendarBlocks(start, end),
     select: (data) => data.blocks,
+    placeholderData: (previous) => previous,
   })
 }
 
@@ -14,7 +15,11 @@ function useBlockMutation(mutationFn) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.calendarBlocks }),
+    // Busy time changes free hours, so workload views refresh too
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.calendarBlocks }),
+      queryClient.invalidateQueries({ queryKey: ['workload'] }),
+    ]),
   })
 }
 

@@ -1,8 +1,11 @@
 import api from './api';
 
 export const calendarService = {
-  getCalendarBlocks: async () => {
-    const response = await api.get('/calendar/blocks');
+  // One entry per occurrence between start and end (repeating blocks appear many times)
+  getCalendarBlocks: async (start, end) => {
+    const response = await api.get('/calendar/blocks', {
+      params: { start: start.toISOString(), end: end.toISOString() },
+    });
     return response.data;
   },
 

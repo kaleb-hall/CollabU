@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const InviteAccept = lazy(() => import('./pages/InviteAccept'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 const queryClient = createQueryClient();
 
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
               <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Suspense>

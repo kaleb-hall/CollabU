@@ -29,8 +29,14 @@ export function AuthProvider({ children }) {
       setUser(data.user);
       return data;
     },
+    // After a profile change, keep the saved copy and the header in sync
+    updateUser: (changed) => {
+      authService.saveUser(changed);
+      setUser(changed);
+      queryClient.setQueryData(['me'], { user: changed });
+    },
     logout,
-  }), [user, logout]);
+  }), [user, logout, queryClient]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

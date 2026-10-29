@@ -36,6 +36,12 @@ export const projectService = {
     await api.delete(`/projects/${projectId}/members/${memberId}`);
   },
 
+  // This week's hours per member
+  getWorkload: async (projectId) => {
+    const response = await api.get(`/projects/${projectId}/workload`);
+    return response.data;
+  },
+
   // Activity feed, newest first. Pass the previous page's next_cursor as `before`.
   getActivity: async (projectId, before) => {
     const response = await api.get(`/projects/${projectId}/activity`, { params: { before } });

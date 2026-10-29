@@ -10,6 +10,8 @@ import ActivityFeed from '../components/ActivityFeed';
 import InviteMemberModal from '../components/InviteMemberModal';
 import NotificationBell from '../components/NotificationBell';
 import TaskComments from '../components/TaskComments';
+import FileAttachments from '../components/FileAttachments';
+import WorkloadView from '../components/WorkloadView';
 
 const STATUS_COLUMNS = [
   { value: 'todo', label: 'To Do', color: 'gray' },
@@ -47,6 +49,7 @@ export default function ProjectDetail() {
   const [showEditTask, setShowEditTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
+  const [view, setView] = useState('board');
 
   const handleCalculateSchedule = () => {
     if (tasks.length === 0) {
@@ -188,7 +191,20 @@ export default function ProjectDetail() {
           {/* Tasks Section - 3 columns */}
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">Tasks</h2>
+              <div role="tablist" aria-label="Project views" className="flex gap-2">
+                {[['board', 'Board'], ['workload', 'Workload']].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === value}
+                    onClick={() => setView(value)}
+                    className={`px-4 py-2 rounded-xl font-semibold ${view === value ? 'bg-white text-gray-900' : 'text-white hover:bg-white/10'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <button
                 onClick={() => setShowAddTask(true)}
                 className="bg-white hover:bg-gray-50 text-gray-900 font-semibold py-2 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
@@ -198,7 +214,9 @@ export default function ProjectDetail() {
               </button>
             </div>
 
-            {totalTasks === 0 ? (
+            {view === 'workload' ? (
+              <WorkloadView projectId={id} />
+            ) : totalTasks === 0 ? (
               <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
                 <CheckSquare className="mx-auto text-gray-400 mb-4" size={48} />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No tasks yet</h3>
@@ -268,6 +286,10 @@ export default function ProjectDetail() {
               )}
             </div>
 
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <FileAttachments projectId={id} ownerId={project.created_by} />
+            </div>
+
             {/* Recent Activity */}
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h3>
@@ -290,6 +312,7 @@ export default function ProjectDetail() {
       {showEditTask && selectedTask && (
         <EditTaskModal
           task={selectedTask}
+          ownerId={project.created_by}
           onClose={() => {
             setShowEditTask(false);
             setSelectedTask(null);
@@ -557,7 +580,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
 }
 
 // Edit Task Modal Component
-function EditTaskModal({ task, onClose, onSuccess }) {
+function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     title: task.title || '',
     description: task.description || '',
@@ -679,6 +702,10 @@ function EditTaskModal({ task, onClose, onSuccess }) {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 pt-6 border-t">
+          <FileAttachments projectId={task.project_id} taskId={task.id} ownerId={ownerId} />
+        </div>
 
         <div className="mt-6 pt-6 border-t">
           <TaskComments taskId={task.id} projectId={task.project_id} />

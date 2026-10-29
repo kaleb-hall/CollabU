@@ -28,6 +28,10 @@ export const authService = {
     localStorage.removeItem('user');
   },
 
+  saveUser: (user) => {
+    localStorage.setItem('user', JSON.stringify(user));
+  },
+
   // Get current user
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');

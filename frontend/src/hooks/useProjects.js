@@ -35,3 +35,10 @@ export function useActivity(projectId) {
     select: (data) => data.pages.flatMap((page) => page.activities),
   })
 }
+
+export function useWorkload(projectId) {
+  return useQuery({
+    queryKey: queryKeys.workload(projectId),
+    queryFn: () => projectService.getWorkload(projectId),
+  })
+}
