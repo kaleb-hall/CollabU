@@ -67,3 +67,15 @@ class ProjectUpdateSchema(Schema):
 class AddMemberSchema(Schema):
     user_id = fields.Int(required=True)
     role = fields.Str(validate=validate.OneOf(MEMBER_ROLES), load_default='member')
+
+
+def validate_timezone(value):
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    try:
+        ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise ValidationError('Unknown timezone')
+
+
+class ScheduleRequestSchema(Schema):
+    timezone = fields.Str(load_default='UTC', validate=validate_timezone)

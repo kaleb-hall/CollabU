@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
 from app.schemas.project_schema import (
@@ -7,6 +7,7 @@ from app.schemas.project_schema import (
     ProjectMemberSchema,
     ProjectSchema,
     ProjectUpdateSchema,
+    ScheduleRequestSchema,
     TaskSummarySchema,
 )
 from app.services import deadline_service, project_service, task_templates
@@ -96,5 +97,6 @@ def remove_member(project, member_id):
 @project_bp.route('/<int:project_id>/schedule', methods=['POST'])
 @project_access()
 def calculate_schedule(project):
-    schedule, warnings = deadline_service.calculate_task_schedule(project)
+    data = ScheduleRequestSchema().load(request.get_json(silent=True) or {})
+    schedule, warnings = deadline_service.calculate_task_schedule(project, data['timezone'])
     return jsonify({'schedule': schedule, 'warnings': warnings}), 200
