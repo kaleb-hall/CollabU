@@ -85,7 +85,7 @@ function NotificationPanel({ onClose }) {
               >
                 <span
                   aria-hidden="true"
-                  className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${notification.read ? 'bg-transparent' : 'bg-blue-600'}`}
+                  className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notification.read ? 'bg-transparent' : 'bg-blue-600'}`}
                 />
                 <span className="min-w-0">
                   <span className={`block text-sm ${notification.read ? 'text-gray-700' : 'font-semibold text-gray-900'}`}>

@@ -1,16 +1,22 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
+  /* Tailwind v4 changed these defaults; keep the v3 behavior the pages expect */
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   body {
-    @apply bg-gradient-to-br from-blue-50 via-blue-100 to-teal-50 min-h-screen;
+    @apply bg-linear-to-br from-blue-50 via-blue-100 to-teal-50 min-h-screen;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-xs hover:shadow-md;
   }
   
   .btn-secondary {
@@ -22,7 +28,7 @@
   }
   
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all;
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden transition-all;
   }
 }
 

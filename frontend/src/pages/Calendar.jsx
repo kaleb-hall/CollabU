@@ -165,7 +165,7 @@ export default function Calendar() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-900 via-blue-700 to-teal-500">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
           <p className="mt-4 text-white">Loading calendar...</p>
@@ -175,7 +175,7 @@ export default function Calendar() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
       {/* Diagonal Stripe Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -184,7 +184,7 @@ export default function Calendar() {
       </div>
 
       {/* Header */}
-      <header className="bg-white shadow-sm relative z-10">
+      <header className="bg-white shadow-xs relative z-10">
         <div className="max-w-7xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -202,7 +202,7 @@ export default function Calendar() {
               <NotificationBell />
               <button
                 onClick={() => setShowAddBlock(true)}
-                className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="bg-linear-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
               >
                 <Plus size={20} />
                 Add Busy Time
@@ -253,7 +253,7 @@ export default function Calendar() {
                   {projects.slice(0, 6).map((project) => (
                     <div key={project.id} className="flex items-center gap-2 mb-2">
                       <div 
-                        className="w-4 h-4 rounded"
+                        className="w-4 h-4 rounded-sm"
                         style={{ backgroundColor: getProjectColor(project.id) }}
                       />
                       <span className="text-sm text-gray-600 truncate">{project.title}</span>
@@ -264,19 +264,19 @@ export default function Calendar() {
                 <div className="pt-3 border-t">
                   <p className="text-sm font-semibold text-gray-700 mb-2">Busy Times</p>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3b82f6' }} />
+                    <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: '#3b82f6' }} />
                     <span className="text-sm text-gray-600">Class</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#14b8a6' }} />
+                    <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: '#14b8a6' }} />
                     <span className="text-sm text-gray-600">Work</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#8b5cf6' }} />
+                    <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: '#8b5cf6' }} />
                     <span className="text-sm text-gray-600">Sleep</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6b7280' }} />
+                    <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: '#6b7280' }} />
                     <span className="text-sm text-gray-600">Other</span>
                   </div>
                 </div>
@@ -343,7 +343,7 @@ export default function Calendar() {
 // Event Detail Modal
 function EventDetailModal({ event, onClose, onDelete }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">{event.title}</h2>
@@ -503,7 +503,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Add Busy Time</h2>
 
@@ -517,7 +517,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               placeholder="e.g., CS 101 Class"
             />
           </div>
@@ -529,7 +529,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               placeholder="Optional description"
               rows="2"
             />
@@ -542,7 +542,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
             <select
               value={formData.block_type}
               onChange={(e) => setFormData({ ...formData, block_type: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
             >
               <option value="busy">Busy</option>
               <option value="class">Class</option>
@@ -563,7 +563,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
                 required
                 value={formData.start_time}
                 onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               />
             </div>
 
@@ -576,7 +576,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
                 required
                 value={formData.end_time}
                 onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               />
             </div>
           </div>
@@ -594,7 +594,7 @@ function AddBlockModal({ initialDate, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              className="flex-1 bg-linear-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
             >
               {loading ? 'Adding...' : 'Add Busy Time'}
             </button>
@@ -652,7 +652,7 @@ function RepeatFields({ formData, setFormData }) {
               min={formData.start_time.slice(0, 10)}
               value={formData.repeat_until}
               onChange={(e) => setFormData({ ...formData, repeat_until: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-hidden"
             />
           </div>
         </>

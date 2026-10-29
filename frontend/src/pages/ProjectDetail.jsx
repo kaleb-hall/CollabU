@@ -78,7 +78,7 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-900 via-blue-700 to-teal-500">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
           <p className="mt-4 text-white">Loading project...</p>
@@ -89,7 +89,7 @@ export default function ProjectDetail() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-900 via-blue-700 to-teal-500">
         <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm">
           <p className="text-gray-900 font-semibold mb-2">Could not open this project</p>
           <p className="text-sm text-gray-600 mb-4">{getErrorMessage(loadError)}</p>
@@ -114,7 +114,7 @@ export default function ProjectDetail() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
       {/* Diagonal Stripe Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -123,7 +123,7 @@ export default function ProjectDetail() {
       </div>
 
       {/* Header */}
-      <header className="bg-white shadow-sm relative z-10">
+      <header className="bg-white shadow-xs relative z-10">
         <div className="max-w-7xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -167,7 +167,7 @@ export default function ProjectDetail() {
             <button
               onClick={handleCalculateSchedule}
               disabled={schedule.isPending}
-              className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              className="bg-linear-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
               <Sparkles size={20} className={schedule.isPending ? 'animate-spin' : ''} />
               {schedule.isPending ? 'Calculating...' : 'Calculate Schedule'}
@@ -180,7 +180,7 @@ export default function ProjectDetail() {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="bg-gradient-to-r from-teal-500 to-teal-600 h-3 rounded-full transition-all duration-500"
+                className="bg-linear-to-r from-teal-500 to-teal-600 h-3 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -425,7 +425,7 @@ function TaskCard({ task, onStatusChange, onEditTask }) {
               e.stopPropagation();
               onStatusChange(task.id, e.target.value);
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {STATUS_COLUMNS.map(option => (
@@ -479,7 +479,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Task</h2>
         
@@ -493,7 +493,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               placeholder="Enter task title"
             />
           </div>
@@ -505,7 +505,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               placeholder="Enter task description"
               rows="3"
             />
@@ -521,7 +521,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
                 required
                 value={formData.due_date}
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               />
             </div>
 
@@ -535,7 +535,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
                 min="0"
                 value={formData.estimated_hours}
                 onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
                 placeholder="e.g., 5"
               />
             </div>
@@ -548,7 +548,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
             <select
               value={formData.priority}
               onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -568,7 +568,7 @@ function AddTaskModal({ projectId, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              className="flex-1 bg-linear-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Task'}
             </button>
@@ -610,7 +610,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Task details</h2>
         
@@ -624,7 +624,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
             />
           </div>
 
@@ -635,7 +635,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               rows="3"
             />
           </div>
@@ -650,7 +650,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
                 required
                 value={formData.due_date}
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               />
             </div>
 
@@ -664,7 +664,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
                 min="0"
                 value={formData.estimated_hours}
                 onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
               />
             </div>
           </div>
@@ -676,7 +676,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
             <select
               value={formData.priority}
               onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -696,7 +696,7 @@ function EditTaskModal({ task, ownerId, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              className="flex-1 bg-linear-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save Changes'}
             </button>

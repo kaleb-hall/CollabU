@@ -70,7 +70,7 @@ export default function FileAttachments({ projectId, taskId, ownerId }) {
                   {formatSize(file.size)}, {file.uploader.full_name}, {timeAgo(file.created_at)}
                 </span>
               </span>
-              <span className="flex gap-3 flex-shrink-0">
+              <span className="flex gap-3 shrink-0">
                 <button type="button" onClick={() => download(file)} aria-label={`Download ${file.filename}`} className="text-blue-600">
                   Download
                 </button>

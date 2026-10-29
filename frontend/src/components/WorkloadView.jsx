@@ -31,14 +31,14 @@ export default function WorkloadView({ projectId }) {
               <span className="text-gray-600">{hours(member.assigned_hours)} of work, {hours(member.free_hours)} free</span>
             </div>
             <div className="mt-1 space-y-1" aria-hidden="true">
-              <div className="h-2 rounded bg-gray-100">
+              <div className="h-2 rounded-sm bg-gray-100">
                 <div
-                  className={`h-2 rounded ${member.overloaded ? 'bg-red-500' : 'bg-blue-500'}`}
+                  className={`h-2 rounded-sm ${member.overloaded ? 'bg-red-500' : 'bg-blue-500'}`}
                   style={{ width: `${(member.assigned_hours / scale) * 100}%` }}
                 />
               </div>
-              <div className="h-2 rounded bg-gray-100">
-                <div className="h-2 rounded bg-teal-400" style={{ width: `${(member.free_hours / scale) * 100}%` }} />
+              <div className="h-2 rounded-sm bg-gray-100">
+                <div className="h-2 rounded-sm bg-teal-400" style={{ width: `${(member.free_hours / scale) * 100}%` }} />
               </div>
             </div>
             {member.overloaded && (

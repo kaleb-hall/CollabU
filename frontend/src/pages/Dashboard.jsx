@@ -50,7 +50,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-900 via-blue-700 to-teal-500">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
           <p className="mt-4 text-white">Loading your workspace...</p>
@@ -61,7 +61,7 @@ export default function Dashboard() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-900 via-blue-700 to-teal-500">
         <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm">
           <p className="text-gray-900 font-semibold mb-2">Could not load your dashboard</p>
           <p className="text-sm text-gray-600 mb-4">{getErrorMessage(loadError)}</p>
@@ -77,7 +77,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-blue-900 via-blue-700 to-teal-500 relative overflow-hidden">
       {/* Diagonal Stripe Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -86,7 +86,7 @@ export default function Dashboard() {
       </div>
 
       {/* Header */}
-      <header className="bg-white shadow-sm relative z-10">
+      <header className="bg-white shadow-xs relative z-10">
         <div className="max-w-7xl mx-auto px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -260,7 +260,7 @@ function UpcomingTaskCard({ task }) {
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
       <div className="mt-1">
-        <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center">
+        <div className="w-5 h-5 rounded-sm border-2 border-gray-300 flex items-center justify-center">
           {task.status === 'completed' && (
             <CheckSquare size={14} className="text-green-500" />
           )}
@@ -402,7 +402,7 @@ function AddProjectModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
         {step === 1 ? (
           <>
@@ -473,7 +473,7 @@ function AddProjectModal({ onClose, onSuccess }) {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
                   placeholder="e.g., Final Research Paper"
                 />
               </div>
@@ -486,7 +486,7 @@ function AddProjectModal({ onClose, onSuccess }) {
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
                   placeholder="Describe your project..."
                   rows="4"
                 />
@@ -501,14 +501,14 @@ function AddProjectModal({ onClose, onSuccess }) {
                   required
                   value={formData.deadline}
                   onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden"
                 />
               </div>
 
               {selectedTemplate?.id !== 'custom' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <Lightbulb className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                    <Lightbulb className="text-blue-600 shrink-0 mt-0.5" size={20} />
                     <div>
                       <p className="text-sm font-semibold text-blue-900 mb-1">
                         Suggested tasks
@@ -533,7 +533,7 @@ function AddProjectModal({ onClose, onSuccess }) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                  className="flex-1 bg-linear-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
                 >
                   {loading ? 'Creating...' : 'Create Project'}
                 </button>

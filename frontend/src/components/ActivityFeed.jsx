@@ -17,7 +17,7 @@ export default function ActivityFeed({ projectId }) {
       <ul className="space-y-3">
         {activities.map((activity) => (
           <li key={activity.id} className="flex items-start gap-3">
-            <span aria-hidden="true" className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-gray-400" />
+            <span aria-hidden="true" className="w-2 h-2 rounded-full mt-2 shrink-0 bg-gray-400" />
             <span className="min-w-0">
               <span className="block text-sm text-gray-900">{activity.description}</span>
               <span className="block text-xs text-gray-500">{timeAgo(activity.created_at)}</span>
