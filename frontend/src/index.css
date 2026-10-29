@@ -1,7 +1,38 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+
+/* Tailwind names for the tokens: bg-paper, text-ink, border-line, font-display, shadow-card ... */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-rule: var(--rule);
+  --color-margin: var(--margin);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-status-todo: var(--status-todo);
+  --color-status-progress: var(--status-progress);
+  --color-status-review: var(--status-review);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-done: var(--status-done);
+  --color-focus: var(--focus);
+
+  --font-display: "Young Serif", Georgia, serif;
+  --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --shadow-card: var(--elev-card);
+  --shadow-lift: var(--elev-lift);
+  --radius-card: 0.375rem;
+}
 
 @layer base {
-  /* Tailwind v4 changed these defaults; keep the v3 behavior the pages expect */
+  /* Tailwind v4 changed these defaults; keep the v3 behavior the older pages expect */
   *, ::after, ::before, ::backdrop, ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
   }
@@ -9,26 +40,60 @@
     cursor: pointer;
   }
 
+  html {
+    background: var(--paper);
+  }
   body {
-    @apply bg-linear-to-br from-blue-50 via-blue-100 to-teal-50 min-h-screen;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One visible focus ring for every interactive element */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
+/* Notebook rule lines, for the few places that should feel like paper (due lists, calendar) */
+@utility ruled {
+  --rule-gap: 2.25rem;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--rule-gap) - 1px),
+    var(--rule) calc(var(--rule-gap) - 1px),
+    var(--rule) var(--rule-gap)
+  );
+}
+
+/* Shared form styles, used by pages until they get their own components */
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-xs hover:shadow-md;
+    @apply inline-flex items-center justify-center gap-2 rounded-card bg-ink px-4 py-2 font-semibold text-paper transition-colors hover:bg-ink-soft disabled:opacity-50;
   }
-  
+
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-card border border-line bg-card px-4 py-2 font-semibold text-ink transition-colors hover:bg-paper-deep;
   }
-  
+
   .card {
-    @apply bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-200;
+    @apply rounded-card border border-line bg-card p-6 shadow-card;
   }
-  
+
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-hidden transition-all;
+    @apply w-full rounded-card border border-line bg-card px-3 py-2 text-ink placeholder:text-ink-faint;
   }
 }
 

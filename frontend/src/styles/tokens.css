@@ -1,0 +1,64 @@
+/*
+  CollabU design tokens: the one place colors, fonts, shadows and radii live.
+  Light is a desk: warm paper, navy ink, one tomato red for urgent things.
+  Dark is a chalkboard: green-black board, chalky off-white text, coral chalk.
+  Tailwind reads these through the @theme block in index.css (bg-paper, text-ink, ...).
+*/
+
+:root {
+  color-scheme: light;
+
+  --paper: #F6F1E7;        /* page background */
+  --paper-deep: #EDE6D8;   /* sunken areas, skeletons */
+  --card: #FFFDF7;         /* index cards and panels */
+  --ink: #1C2A44;          /* main text */
+  --ink-soft: #4B5670;     /* secondary text */
+  --ink-faint: #646C7F;    /* hints and labels */
+  --line: #E2DACB;         /* borders */
+  --rule: #D5DEEA;         /* notebook rule lines */
+  --margin: #E7B7AE;       /* notebook margin line */
+
+  --accent: #B8361F;       /* tomato: deadlines, urgent, overdue. Use sparingly */
+  --accent-soft: #FBE6DF;
+  --on-accent: #FFFDF7;
+
+  --status-todo: #5F6573;
+  --status-progress: #2F5C93;
+  --status-review: #7D6418;
+  --status-blocked: #6A5590;
+  --status-done: #3F6E4B;
+
+  --focus: #2F5C93;
+  --elev-card: 0 1px 0 rgb(28 42 68 / 0.06), 0 2px 6px rgb(28 42 68 / 0.06);
+  --elev-lift: 0 10px 24px rgb(28 42 68 / 0.14), 0 2px 6px rgb(28 42 68 / 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --paper: #18201C;
+    --paper-deep: #121915;
+    --card: #212B26;
+    --ink: #ECE8DC;
+    --ink-soft: #BCC3B8;
+    --ink-faint: #97A095;
+    --line: #34423B;
+    --rule: #2C3933;
+    --margin: #5A3F3A;
+
+    --accent: #F28A73;
+    --accent-soft: #3A2723;
+    --on-accent: #18201C;
+
+    --status-todo: #B7BCC4;
+    --status-progress: #9DBCE6;
+    --status-review: #E2C877;
+    --status-blocked: #C7B6E6;
+    --status-done: #9FCFA9;
+
+    --focus: #E2C877;
+    --elev-card: 0 1px 0 rgb(0 0 0 / 0.25), 0 2px 6px rgb(0 0 0 / 0.25);
+    --elev-lift: 0 12px 28px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
+  }
+}
