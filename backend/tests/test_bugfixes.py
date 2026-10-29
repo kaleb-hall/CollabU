@@ -1,11 +1,10 @@
 """Regression tests for bugs found in the phase 1 audit (see PLAN.md section 0)."""
-from tests.conftest import register, create_project, create_task
+from tests.conftest import register, create_project, create_task, join_project
 from tests.test_calendar import make_block
 
 
 def add_member(client, owner_headers, project_id, user_id):
-    response = client.post(f'/api/projects/{project_id}/members', json={'user_id': user_id}, headers=owner_headers)
-    assert response.status_code == 201
+    join_project(project_id, user_id)
 
 
 def test_template_project_accepts_utc_deadline(client):

@@ -1,4 +1,4 @@
-from tests.conftest import register, create_project
+from tests.conftest import register, create_project, join_project
 
 
 def test_create_and_list_projects(client):
@@ -44,18 +44,13 @@ def test_admin_can_update_and_delete(client):
     assert client.get(f"/api/projects/{project['id']}", headers=headers).status_code == 404
 
 
-def test_add_and_remove_member(client):
+def test_remove_member(client):
     _, owner = register(client)
     sam, sam_headers = register(client, email='sam@example.com', first_name='Sam')
     project = create_project(client, owner)
 
-    response = client.post(f"/api/projects/{project['id']}/members", json={'user_id': sam['id']}, headers=owner)
-    assert response.status_code == 201
-    member_id = response.get_json()['member']['id']
+    member_id = join_project(project['id'], sam['id']).id
     assert client.get(f"/api/projects/{project['id']}", headers=sam_headers).status_code == 200
-
-    again = client.post(f"/api/projects/{project['id']}/members", json={'user_id': sam['id']}, headers=owner)
-    assert again.status_code == 409
 
     assert client.delete(f"/api/projects/{project['id']}/members/{member_id}", headers=owner).status_code == 204
     assert client.get(f"/api/projects/{project['id']}", headers=sam_headers).status_code == 403
@@ -65,6 +60,6 @@ def test_regular_member_cannot_update_project(client):
     _, owner = register(client)
     sam, sam_headers = register(client, email='sam@example.com')
     project = create_project(client, owner)
-    client.post(f"/api/projects/{project['id']}/members", json={'user_id': sam['id']}, headers=owner)
+    join_project(project['id'], sam['id'])
     response = client.put(f"/api/projects/{project['id']}", json={'title': 'Mine'}, headers=sam_headers)
     assert response.status_code == 403

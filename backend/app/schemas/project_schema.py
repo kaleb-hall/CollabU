@@ -64,11 +64,6 @@ class ProjectUpdateSchema(Schema):
     status = fields.Str(validate=validate.OneOf(PROJECT_STATUSES))
 
 
-class AddMemberSchema(Schema):
-    user_id = fields.Int(required=True)
-    role = fields.Str(validate=validate.OneOf(MEMBER_ROLES), load_default='member')
-
-
 def validate_timezone(value):
     if not is_valid_timezone(value):
         raise ValidationError('Unknown timezone')

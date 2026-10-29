@@ -100,3 +100,9 @@ def register_error_handlers(app, jwt):
     jwt.invalid_token_loader(lambda reason: unauthorized('Your session is invalid, please log in again'))
     jwt.expired_token_loader(lambda header, payload: unauthorized('Your session expired, please log in again'))
     jwt.user_lookup_error_loader(lambda header, payload: unauthorized('Your account no longer exists'))
+
+
+class InviteExpired(AppError):
+    status = 410
+    code = 'INVITE_EXPIRED'
+    message = 'This invite has expired. Ask for a new one.'

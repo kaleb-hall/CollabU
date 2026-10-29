@@ -3,9 +3,7 @@ from flask_jwt_extended import jwt_required
 
 from app.schemas.activity_schema import ActivitySchema
 from app.schemas.project_schema import (
-    AddMemberSchema,
     ProjectCreateSchema,
-    ProjectMemberSchema,
     ProjectSchema,
     ProjectUpdateSchema,
     ScheduleRequestSchema,
@@ -22,7 +20,6 @@ project_bp = Blueprint('projects', __name__)
 
 project_schema = ProjectSchema()
 projects_schema = ProjectSchema(many=True)
-member_schema = ProjectMemberSchema()
 summary_schema = TaskSummarySchema()
 
 
@@ -80,14 +77,6 @@ def update_project(project):
 def delete_project(project):
     project_service.delete_project(project)
     return '', 204
-
-
-@project_bp.route('/<int:project_id>/members', methods=['POST'])
-@project_access(admin=True)
-def add_member(project):
-    data = load_json(AddMemberSchema())
-    member = project_service.add_member(project, data['user_id'], data['role'])
-    return jsonify({'member': member_schema.dump(member)}), 201
 
 
 @project_bp.route('/<int:project_id>/members/<int:member_id>', methods=['DELETE'])

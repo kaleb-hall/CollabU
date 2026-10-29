@@ -1,9 +1,9 @@
 """Make sure list endpoints do not run one query per row (the N+1 problem)."""
-from tests.conftest import register, create_project, create_task
+from tests.conftest import register, create_project, create_task, join_project
 
 
 def add_member(client, owner_headers, project_id, user_id):
-    client.post(f'/api/projects/{project_id}/members', json={'user_id': user_id}, headers=owner_headers)
+    join_project(project_id, user_id)
 
 
 def build_projects(client, how_many):

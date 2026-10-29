@@ -1,11 +1,11 @@
-from tests.conftest import register, create_project, create_task
+from tests.conftest import register, create_project, create_task, join_project
 
 
 def setup_team(client):
     ana, headers = register(client)
     sam, _ = register(client, email='sam@example.com', first_name='Sam')
     project = create_project(client, headers, deadline='2030-01-15T12:00:00Z')
-    client.post(f"/api/projects/{project['id']}/members", json={'user_id': sam['id']}, headers=headers)
+    join_project(project['id'], sam['id'])
     return ana, sam, headers, project
 
 
