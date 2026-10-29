@@ -255,6 +255,15 @@ Too much for one phase, so I split it. Each part ends with a stop for your OK.
 9. **Profile / settings page**
    - Change first/last name, change password (needs current password), email notifications on/off.
 
+### Phase 2B results (done, branch `phase-2b-planning`, built on `phase-2a-collab`)
+
+- Backend tests 130 to 179, frontend tests 43 to 67, lint clean.
+- Answers used: Google Drive stub deleted, repeats edit or delete the whole series, files stored on local disk behind a small storage interface (cloud provider picked in phase 4).
+- Checked by hand in the browser: uploaded and downloaded a PDF, Workload tab flagged an over capacity member, a Tue/Thu class showed on this week, next week (same local time after daylight saving ended) and in month view. Found and fixed a bug where moving to another week showed it empty.
+- Not clicked through by hand: saving the settings page (covered by frontend and backend tests).
+- GET /api/calendar/blocks now requires start and end and returns one entry per repeat.
+- Deleting a task keeps its files on the project instead of deleting them.
+
 ---
 
 ## Phase 3: the planner look
