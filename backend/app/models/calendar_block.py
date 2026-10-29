@@ -33,21 +33,6 @@ class CalendarBlock(db.Model):
     # Relationships
     user = db.relationship('User', backref='calendar_blocks')
     
-    def to_dict(self):
-        """Convert calendar block to dictionary"""
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'start_time': self.start_time.isoformat() if self.start_time else None,
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'title': self.title,
-            'description': self.description,
-            'block_type': self.block_type,
-            'is_recurring': self.is_recurring,
-            'recurrence_pattern': self.recurrence_pattern,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-    
+
     def __repr__(self):
         return f'<CalendarBlock {self.title} for user {self.user_id}>'

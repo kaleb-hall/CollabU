@@ -22,16 +22,6 @@ class ProjectMember(db.Model):
     # Relationships
     user = db.relationship('User', backref='project_memberships', lazy='selectin')
     
-    def to_dict(self):
-        """Convert project member to dictionary"""
-        return {
-            'id': self.id,
-            'project_id': self.project_id,
-            'user_id': self.user_id,
-            'user': self.user.to_dict() if self.user else None,
-            'role': self.role,
-            'joined_at': self.joined_at.isoformat() if self.joined_at else None
-        }
-    
+
     def __repr__(self):
         return f'<ProjectMember user_id={self.user_id} project_id={self.project_id}>'
