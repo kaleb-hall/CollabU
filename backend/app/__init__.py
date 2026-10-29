@@ -33,6 +33,7 @@ def create_app(config_name=None):
 def register_blueprints(app):
     from app.controllers.auth_controller import auth_bp
     from app.controllers.calendar_controller import calendar_bp
+    from app.controllers.comment_controller import comment_bp
     from app.controllers.invite_controller import invite_bp
     from app.controllers.notification_controller import notification_bp
     from app.controllers.project_controller import project_bp
@@ -43,6 +44,7 @@ def register_blueprints(app):
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(project_bp, url_prefix='/api/projects')
     app.register_blueprint(task_bp, url_prefix='/api/tasks')
+    app.register_blueprint(comment_bp, url_prefix='/api/tasks')
     app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(invite_bp, url_prefix='/api')
