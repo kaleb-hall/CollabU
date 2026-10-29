@@ -10,8 +10,10 @@ jwt = JWTManager()
 
 
 def create_app(config_name=None):
+    from app.cli import register_commands
     from app.config import load_config
     from app.errors import register_error_handlers
+    from app.services.email_sender import init_email
 
     app = Flask(__name__)
     app.config.update(load_config(config_name))
@@ -23,6 +25,8 @@ def create_app(config_name=None):
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
     register_error_handlers(app, jwt)
     register_blueprints(app)
+    register_commands(app)
+    init_email(app)
     return app
 
 

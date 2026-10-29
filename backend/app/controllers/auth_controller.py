@@ -27,7 +27,7 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = load_json(UserLoginSchema())
-    return auth_response(auth_service.authenticate(data['email'], data['password']), 200)
+    return auth_response(auth_service.authenticate(data['email'], data['password'], data['timezone']), 200)
 
 
 @auth_bp.route('/me', methods=['GET'])

@@ -25,6 +25,7 @@ class User(db.Model):
     # Account status
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    timezone = db.Column(db.String(64), default='UTC', server_default='UTC', nullable=False)
     email_notifications = db.Column(db.Boolean, default=True, server_default=db.true(), nullable=False)
     
     def set_password(self, password):

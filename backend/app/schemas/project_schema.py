@@ -2,7 +2,7 @@ from marshmallow import EXCLUDE, Schema, ValidationError, fields, validate, vali
 
 from app.schemas.fields import UtcDateTime
 from app.schemas.user_schema import UserSchema
-from app.utils.time import utcnow
+from app.utils.time import is_valid_timezone, utcnow
 
 PROJECT_STATUSES = ['active', 'completed', 'archived', 'on_hold']
 MEMBER_ROLES = ['admin', 'member', 'viewer']
@@ -70,10 +70,7 @@ class AddMemberSchema(Schema):
 
 
 def validate_timezone(value):
-    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-    try:
-        ZoneInfo(value)
-    except (ZoneInfoNotFoundError, ValueError):
+    if not is_valid_timezone(value):
         raise ValidationError('Unknown timezone')
 
 

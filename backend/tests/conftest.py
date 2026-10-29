@@ -91,3 +91,9 @@ def get_json(client, url, headers):
     response = client.get(url, headers=headers)
     assert response.status_code == 200, response.get_json()
     return response.get_json()
+
+
+@pytest.fixture
+def outbox(app):
+    """Emails sent during the test (the testing config uses an in-memory sender)."""
+    return app.extensions['email_sender'].outbox

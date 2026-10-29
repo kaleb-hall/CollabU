@@ -36,7 +36,13 @@ class Config:
             'JSON_SORT_KEYS': cls.JSON_SORT_KEYS,
             'CORS_ORIGINS': cors_origins(),
             'TESTING': cls is TestingConfig,
+            'EMAIL_BACKEND': cls.email_backend(),
+            'FRONTEND_URL': os.environ.get('FRONTEND_URL', 'http://localhost:5173'),
         }
+
+    @classmethod
+    def email_backend(cls):
+        return os.environ.get('EMAIL_BACKEND', 'console')
 
     @classmethod
     def database_uri(cls):
@@ -51,6 +57,10 @@ class TestingConfig(Config):
     @classmethod
     def database_uri(cls):
         return 'sqlite:///:memory:'
+
+    @classmethod
+    def email_backend(cls):
+        return 'memory'
 
 
 class ProductionConfig(Config):
