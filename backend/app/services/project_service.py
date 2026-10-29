@@ -1,10 +1,10 @@
 from app import db
 from app.errors import Conflict, NotFound
 from app.models import Project, ProjectMember, Task, User
-from app.services.ai_task_generator import AITaskGenerator
+from app.services import task_templates
 
 
-def create_project(data, user_id, auto_generate_tasks=False):
+def create_project(data, user_id, auto_generate_tasks=False, template=None):
     project = Project(
         title=data['title'],
         description=data.get('description'),
@@ -17,7 +17,7 @@ def create_project(data, user_id, auto_generate_tasks=False):
 
     suggestions = None
     if auto_generate_tasks:
-        suggestions = AITaskGenerator.generate_tasks(project.title, project.description or '', project.deadline)
+        suggestions = task_templates.suggest_tasks(project.title, project.description or '', project.deadline, template)
         for suggestion in suggestions['tasks']:
             db.session.add(Task(
                 project_id=project.id,
@@ -33,7 +33,7 @@ def create_project(data, user_id, auto_generate_tasks=False):
 
 
 def task_suggestions(project):
-    return AITaskGenerator.generate_tasks(project.title, project.description or '', project.deadline)
+    return task_templates.suggest_tasks(project.title, project.description or '', project.deadline)
 
 
 def projects_for_user(user_id):

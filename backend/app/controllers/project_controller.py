@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 
 from app.schemas.project_schema import (
@@ -8,7 +8,7 @@ from app.schemas.project_schema import (
     ProjectSchema,
     ProjectUpdateSchema,
 )
-from app.services import deadline_service, project_service
+from app.services import deadline_service, project_service, task_templates
 from app.utils.auth import current_user_id
 from app.utils.permissions import project_access
 from app.utils.request_data import load_json
@@ -24,8 +24,9 @@ member_schema = ProjectMemberSchema()
 @jwt_required()
 def create_project():
     data = load_json(ProjectCreateSchema())
-    auto_generate = bool(request.get_json().get('auto_generate_tasks', False))
-    project, suggestions = project_service.create_project(data, current_user_id(), auto_generate)
+    project, suggestions = project_service.create_project(
+        data, current_user_id(), data.pop('auto_generate_tasks'), data.pop('template')
+    )
 
     response = {'project': project_schema.dump(project)}
     if suggestions:
@@ -55,7 +56,7 @@ def get_project(project):
 @project_bp.route('/<int:project_id>/task-suggestions', methods=['GET'])
 @project_access()
 def get_task_suggestions(project):
-    return jsonify(project_service.task_suggestions(project)), 200
+    return jsonify(task_templates.serialize(project_service.task_suggestions(project))), 200
 
 
 @project_bp.route('/<int:project_id>', methods=['PUT'])

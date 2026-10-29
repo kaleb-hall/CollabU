@@ -3,6 +3,7 @@ from datetime import datetime
 
 class ProjectMember(db.Model):
     __tablename__ = 'project_members'
+    __table_args__ = (db.UniqueConstraint('project_id', 'user_id', name='uq_project_members_project_user'),)
     
     # Primary Key
     id = db.Column(db.Integer, primary_key=True)

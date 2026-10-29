@@ -42,6 +42,8 @@ class ProjectCreateSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     description = fields.Str(allow_none=True)
     deadline = UtcDateTime(required=True, validate=validate_future)
+    auto_generate_tasks = fields.Bool(load_default=False)
+    template = fields.Str(load_default=None, allow_none=True)
 
 
 class ProjectUpdateSchema(Schema):
