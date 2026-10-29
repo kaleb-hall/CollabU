@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { MotionConfig } from 'motion/react';
+import { IconContext } from '@phosphor-icons/react';
 import { AuthProvider } from './contexts/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { createQueryClient } from './lib/queryClient';
@@ -34,9 +36,16 @@ function PageLoading() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Animations follow the system "reduce motion" setting; icons default to duotone */}
+      <MotionConfig reducedMotion="user">
+      <IconContext.Provider value={{ weight: 'duotone' }}>
       <BrowserRouter>
         <AuthProvider>
-          <Toaster position="top-right" duration={4000} />
+          <Toaster
+            position="top-center"
+            duration={4000}
+            toastOptions={{ className: 'font-sans !bg-card !text-ink !border-line !shadow-lift !rounded-card' }}
+          />
           <Suspense fallback={<PageLoading />}>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -51,6 +60,8 @@ export default function App() {
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
+      </IconContext.Provider>
+      </MotionConfig>
     </QueryClientProvider>
   );
 }

@@ -1,47 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Popover } from '@base-ui/react/popover';
+import { useAnimate, useReducedMotion } from 'motion/react';
+import { Bell } from '@phosphor-icons/react';
 import { useMarkAllRead, useMarkRead, useNotificationList, useUnreadCount } from '../hooks/useNotifications';
 import { timeAgo } from '../lib/dates';
+import { cx } from '../lib/cx';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef(null);
   const { data: unread = 0 } = useUnreadCount();
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const closeOnEscape = (event) => event.key === 'Escape' && setOpen(false);
-    const closeOnOutsideClick = (event) => {
-      if (!containerRef.current?.contains(event.target)) setOpen(false);
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    document.addEventListener('mousedown', closeOnOutsideClick);
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape);
-      document.removeEventListener('mousedown', closeOnOutsideClick);
-    };
-  }, [open]);
+  const scope = useWiggleOnIncrease(unread);
 
   return (
-    <div className="relative" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors"
+        className="relative flex h-10 w-10 items-center justify-center rounded-card text-ink-soft hover:bg-paper-deep hover:text-ink"
       >
-        <Bell size={20} />
+        <span ref={scope} className="flex">
+          <Bell size={22} aria-hidden="true" />
+        </span>
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-600 text-white text-[0.65rem] font-bold flex items-center justify-center">
+          <span className="absolute right-1 top-1 flex h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full bg-accent px-1 font-mono text-[0.65rem] font-medium text-on-accent">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
-      </button>
-      {open && <NotificationPanel onClose={() => setOpen(false)} />}
-    </div>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner sideOffset={8} align="end" className="z-50">
+          <Popover.Popup className="w-[min(22rem,calc(100vw-2rem))] rounded-card border border-line bg-card shadow-lift transition-opacity data-[starting-style]:opacity-0 data-[ending-style]:opacity-0">
+            <NotificationPanel onClose={() => setOpen(false)} />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
+}
+
+// A small shake when the unread count goes up (not on first load, not with reduced motion)
+function useWiggleOnIncrease(count) {
+  const [scope, animate] = useAnimate();
+  const reduceMotion = useReducedMotion();
+  const previous = useRef(count);
+  useEffect(() => {
+    if (count > previous.current && !reduceMotion && scope.current) {
+      animate(scope.current, { rotate: [0, -16, 13, -8, 4, 0] }, { duration: 0.6 });
+    }
+    previous.current = count;
+  }, [count, reduceMotion, animate, scope]);
+  return scope;
 }
 
 function NotificationPanel({ onClose }) {
@@ -58,41 +66,37 @@ function NotificationPanel({ onClose }) {
   };
 
   return (
-    <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-200 z-50">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h2 className="font-semibold text-gray-900">Notifications</h2>
-        <button
-          type="button"
-          onClick={() => markAllRead.mutate()}
-          className="text-sm text-blue-600 hover:text-blue-700"
-        >
+    <>
+      <div className="flex items-center justify-between border-b border-line px-4 py-3">
+        <Popover.Title className="font-display text-lg text-ink">Notifications</Popover.Title>
+        <button type="button" onClick={() => markAllRead.mutate()} className="text-sm font-semibold text-ink-soft hover:text-ink">
           Mark all read
         </button>
       </div>
       <div className="max-h-96 overflow-y-auto">
-        {list.isPending && <p className="p-4 text-sm text-gray-500">Loading...</p>}
-        {list.isError && <p className="p-4 text-sm text-red-600">Could not load notifications.</p>}
+        {list.isPending && <p className="p-4 text-sm text-ink-soft">Loading...</p>}
+        {list.isError && <p className="p-4 text-sm text-accent">Could not load notifications.</p>}
         {list.isSuccess && notifications.length === 0 && (
-          <p className="p-4 text-sm text-gray-500">Nothing new. You will see assignments, reviews and deadlines here.</p>
+          <p className="p-4 text-sm text-ink-soft">Nothing new. Assignments, reviews and deadlines show up here.</p>
         )}
         <ul>
           {notifications.map((notification) => (
-            <li key={notification.id}>
+            <li key={notification.id} className="border-b border-line last:border-b-0">
               <button
                 type="button"
                 onClick={() => openNotification(notification)}
-                className="w-full text-left px-4 py-3 hover:bg-gray-50 flex gap-3"
+                className="flex w-full gap-3 px-4 py-3 text-left hover:bg-paper-deep"
               >
                 <span
                   aria-hidden="true"
-                  className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notification.read ? 'bg-transparent' : 'bg-blue-600'}`}
+                  className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', notification.read ? 'bg-transparent' : notification.type === 'deadline' ? 'bg-accent' : 'bg-ink')}
                 />
                 <span className="min-w-0">
-                  <span className={`block text-sm ${notification.read ? 'text-gray-700' : 'font-semibold text-gray-900'}`}>
+                  <span className={cx('block text-sm', notification.read ? 'text-ink-soft' : 'font-semibold text-ink')}>
                     {notification.title}
                   </span>
-                  {notification.message && <span className="block text-xs text-gray-500">{notification.message}</span>}
-                  <span className="block text-xs text-gray-400 mt-0.5">{timeAgo(notification.created_at)}</span>
+                  {notification.message && <span className="block text-xs text-ink-faint">{notification.message}</span>}
+                  <span className="mt-0.5 block font-mono text-xs text-ink-faint">{timeAgo(notification.created_at)}</span>
                 </span>
               </button>
             </li>
@@ -103,12 +107,12 @@ function NotificationPanel({ onClose }) {
             type="button"
             onClick={() => list.fetchNextPage()}
             disabled={list.isFetchingNextPage}
-            className="w-full py-2 text-sm text-blue-600 hover:bg-gray-50 border-t"
+            className="w-full border-t border-line py-2 text-sm font-semibold text-ink-soft hover:bg-paper-deep"
           >
             {list.isFetchingNextPage ? 'Loading...' : 'Show older'}
           </button>
         )}
       </div>
-    </div>
+    </>
   );
 }
