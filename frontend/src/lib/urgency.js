@@ -23,3 +23,13 @@ export function dueStamp(value) {
   if (days === 1) return 'TOMORROW'
   return format(parseApiDate(value), 'MMM d').toUpperCase()
 }
+
+// The due column in My work: how late, the time today, the weekday this week, or the date
+export function workDueLabel(value) {
+  const days = daysUntil(value)
+  const date = parseApiDate(value)
+  if (days < 0) return `${-days}d late`
+  if (days === 0) return format(date, 'h:mm a')
+  if (days <= 7) return format(date, 'EEE d')
+  return format(date, 'MMM d')
+}

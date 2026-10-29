@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { deadlineLabel, dueStamp, isUrgent } from './urgency'
+import { deadlineLabel, dueStamp, isUrgent, workDueLabel } from './urgency'
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -33,5 +33,14 @@ describe('dueStamp', () => {
     expect(dueStamp('2030-01-11T18:00:00Z')).toBe('TOMORROW')
     expect(dueStamp('2030-01-20T18:00:00Z')).toBe('JAN 20')
     expect(dueStamp('2030-01-08T18:00:00Z')).toBe('LATE')
+  })
+})
+
+describe('workDueLabel', () => {
+  it('fits each group in My work', () => {
+    expect(workDueLabel('2030-01-08T18:00:00Z')).toBe('2d late')
+    expect(workDueLabel('2030-01-11T01:00:00Z')).toBe('5:00 PM')
+    expect(workDueLabel('2030-01-12T18:00:00Z')).toBe('Sat 12')
+    expect(workDueLabel('2030-02-20T18:00:00Z')).toBe('Feb 20')
   })
 })
