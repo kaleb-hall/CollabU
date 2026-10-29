@@ -3,25 +3,24 @@ from collections import defaultdict
 from zoneinfo import ZoneInfo
 
 from app import db
-from app.models import CalendarBlock, ProjectMember, Task
+from app.models import ProjectMember, Task
+from app.services import calendar_service
+from app.services.recurrence import expand
 from app.services.scheduling import Member, PlannedTask, build_warnings, plan_schedule
 from app.utils.time import iso_utc, utcnow
 
 
 def load_members(project):
+    """Members plus each one's timezone (repeating classes happen in local time)."""
     memberships = ProjectMember.query.filter_by(project_id=project.id).all()
-    return [Member(m.user_id, f'{m.user.first_name} {m.user.last_name}') for m in memberships]
+    members = [Member(m.user_id, f'{m.user.first_name} {m.user.last_name}') for m in memberships]
+    return members, {m.user_id: ZoneInfo(m.user.timezone) for m in memberships}
 
 
-def load_busy(user_ids, start, end):
-    blocks = CalendarBlock.query.filter(
-        CalendarBlock.user_id.in_(user_ids),
-        CalendarBlock.end_time > start,
-        CalendarBlock.start_time < end,
-    ).all()
+def load_busy(timezones, start, end):
     busy = defaultdict(list)
-    for block in blocks:
-        busy[block.user_id].append((block.start_time, block.end_time))
+    for block in calendar_service.blocks_touching(list(timezones), start, end):
+        busy[block.user_id].extend(expand(block, timezones[block.user_id], start, end))
     return busy
 
 
@@ -30,12 +29,12 @@ def calculate_task_schedule(project, timezone_name='UTC'):
     if not tasks:
         return None, ['There are no open tasks to schedule']
 
-    members = load_members(project)
+    members, timezones = load_members(project)
     now = utcnow()
     if project.deadline <= now:
         return None, ['The project deadline has already passed']
 
-    busy = load_busy([m.user_id for m in members], now, project.deadline)
+    busy = load_busy(timezones, now, project.deadline)
     planned = [PlannedTask(t.id, t.title, t.priority, t.due_date, t.estimated_hours, t.assigned_to) for t in tasks]
     result = plan_schedule(planned, members, busy, now, project.deadline, ZoneInfo(timezone_name))
 

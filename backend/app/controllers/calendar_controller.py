@@ -6,6 +6,7 @@ from app.schemas.calendar_schema import (
     CalendarBlockSchema,
     CalendarBlockUpdateSchema,
     DateRangeSchema,
+    OccurrenceSchema,
 )
 from app.services import calendar_service
 from app.utils.auth import current_user_id
@@ -14,15 +15,14 @@ from app.utils.request_data import load_json
 calendar_bp = Blueprint('calendar', __name__)
 
 block_schema = CalendarBlockSchema()
-blocks_schema = CalendarBlockSchema(many=True)
 
 
 @calendar_bp.route('/blocks', methods=['GET'])
 @jwt_required()
 def list_blocks():
-    date_range = DateRangeSchema().load(request.args) if request.args else {}
-    blocks = calendar_service.blocks_in_range(current_user_id(), date_range.get('start'), date_range.get('end'))
-    return jsonify({'blocks': blocks_schema.dump(blocks)}), 200
+    date_range = DateRangeSchema().load(request.args)
+    slots = calendar_service.occurrences(current_user_id(), date_range['start'], date_range['end'])
+    return jsonify({'blocks': OccurrenceSchema(many=True).dump(slots)}), 200
 
 
 @calendar_bp.route('/blocks/<int:block_id>', methods=['GET'])

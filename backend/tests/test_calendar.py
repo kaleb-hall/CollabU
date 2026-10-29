@@ -18,7 +18,7 @@ def test_create_list_update_delete_block(client):
     assert response.status_code == 201
     block_id = response.get_json()['block']['id']
 
-    blocks = client.get('/api/calendar/blocks', headers=headers).get_json()['blocks']
+    blocks = client.get('/api/calendar/blocks?start=2030-01-01T00:00:00Z&end=2030-02-01T00:00:00Z', headers=headers).get_json()['blocks']
     assert [b['id'] for b in blocks] == [block_id]
 
     response = client.put(f'/api/calendar/blocks/{block_id}', json={'title': 'CS 102'}, headers=headers)
@@ -26,7 +26,7 @@ def test_create_list_update_delete_block(client):
     assert response.get_json()['block']['title'] == 'CS 102'
 
     assert client.delete(f'/api/calendar/blocks/{block_id}', headers=headers).status_code == 204
-    assert client.get('/api/calendar/blocks', headers=headers).get_json()['blocks'] == []
+    assert client.get('/api/calendar/blocks?start=2030-01-01T00:00:00Z&end=2030-02-01T00:00:00Z', headers=headers).get_json()['blocks'] == []
 
 
 def test_block_end_must_be_after_start(client):
@@ -39,6 +39,6 @@ def test_cannot_see_other_users_blocks(client):
     _, ana = register(client)
     _, sam = register(client, email='sam@example.com')
     block_id = make_block(client, ana).get_json()['block']['id']
-    assert client.get('/api/calendar/blocks', headers=sam).get_json()['blocks'] == []
+    assert client.get('/api/calendar/blocks?start=2030-01-01T00:00:00Z&end=2030-02-01T00:00:00Z', headers=sam).get_json()['blocks'] == []
     assert client.get(f'/api/calendar/blocks/{block_id}', headers=sam).status_code == 404
     assert client.delete(f'/api/calendar/blocks/{block_id}', headers=sam).status_code == 404

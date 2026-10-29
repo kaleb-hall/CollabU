@@ -41,7 +41,7 @@ def test_overlapping_block_is_saved_with_warning(client):
     body = response.get_json()
     assert body['block']['title'] == 'Lab'
     assert body['warnings']
-    assert len(client.get('/api/calendar/blocks', headers=headers).get_json()['blocks']) == 2
+    assert len(client.get('/api/calendar/blocks?start=2030-01-01T00:00:00Z&end=2030-02-01T00:00:00Z', headers=headers).get_json()['blocks']) == 2
 
 
 def test_my_tasks_only_returns_tasks_assigned_to_me(client):

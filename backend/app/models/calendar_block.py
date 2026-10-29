@@ -21,10 +21,9 @@ class CalendarBlock(db.Model):
     block_type = db.Column(db.String(50), default='busy', nullable=False)
     # Types: 'busy', 'class', 'work', 'sleep', 'meeting'
     
-    # Recurring
-    is_recurring = db.Column(db.Boolean, default=False, nullable=False)
-    recurrence_pattern = db.Column(db.String(50), nullable=True)
-    # Patterns: 'daily', 'weekly', 'monthly'
+    # Weekly repeats: weekdays like "MO,WE,FR" and the last date (both or neither)
+    repeat_days_csv = db.Column('repeat_days', db.String(20), nullable=True)
+    repeat_until = db.Column(db.Date, nullable=True)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -33,6 +32,18 @@ class CalendarBlock(db.Model):
     # Relationships
     user = db.relationship('User', backref='calendar_blocks')
     
+
+    @property
+    def repeat_days(self):
+        return self.repeat_days_csv.split(',') if self.repeat_days_csv else None
+
+    @repeat_days.setter
+    def repeat_days(self, days):
+        self.repeat_days_csv = ','.join(days) if days else None
+
+    @property
+    def is_recurring(self):
+        return bool(self.repeat_days_csv)
 
     def __repr__(self):
         return f'<CalendarBlock {self.title} for user {self.user_id}>'
