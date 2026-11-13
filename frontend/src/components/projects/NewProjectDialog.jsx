@@ -85,7 +85,7 @@ export default function NewProjectDialog({ open, onOpenChange }) {
           <Field label="Description" as="textarea" rows={3} value={form.description}
             hint={template.id === 'custom' ? undefined : 'Words like "lab" or "slides" help us suggest better tasks.'}
             onChange={(e) => setForm({ ...form, description: e.target.value })} />
-          <Field label="Deadline" type="datetime-local" required value={form.deadline} className="font-mono"
+          <Field label="Deadline" type="datetime-local" required value={form.deadline} inputClassName="font-mono"
             onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={() => setTemplate(null)}>Back</Button>

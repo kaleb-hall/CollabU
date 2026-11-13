@@ -80,7 +80,8 @@ function Column({ status, tasks, onOpenTask, onMove, draggingId }) {
       ref={setNodeRef}
       aria-label={status.label}
       className={cx(
-        'flex w-[82vw] max-w-72 shrink-0 snap-start flex-col rounded-card bg-paper-deep/70 p-2 transition-colors sm:w-64',
+        // Phones: one column per swipe. Wider screens: the five columns share the width
+        'flex w-[82vw] max-w-72 shrink-0 snap-start flex-col rounded-card bg-paper-deep/70 p-2 transition-colors sm:w-64 xl:w-auto xl:min-w-52 xl:max-w-none xl:flex-1',
         isOver && 'bg-paper-deep ring-2 ring-focus/40',
       )}
     >

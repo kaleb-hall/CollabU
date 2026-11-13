@@ -83,9 +83,9 @@ function TaskForm({ task, members, onDeleted }) {
           options={[{ value: NOBODY, label: 'Nobody yet' }, ...members.map((m) => ({ value: m.user_id, label: m.user.full_name }))]}
         />
         <Field label="Estimate (hours)" type="number" min="0.25" step="0.25" value={form.estimated_hours}
-          className="font-mono" onChange={set('estimated_hours')} />
+          inputClassName="font-mono" onChange={set('estimated_hours')} />
       </div>
-      <Field label="Due" type="datetime-local" required value={form.due_date} className="font-mono" onChange={set('due_date')} />
+      <Field label="Due" type="datetime-local" required value={form.due_date} inputClassName="font-mono" onChange={set('due_date')} />
       <Field label="Notes" as="textarea" rows={3} value={form.description} onChange={set('description')} />
       <div className="flex items-center justify-between gap-2">
         <ConfirmDialog

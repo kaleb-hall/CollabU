@@ -6,6 +6,7 @@ import { IconContext } from '@phosphor-icons/react';
 import { AuthProvider } from './contexts/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { createQueryClient } from './lib/queryClient';
+import PageErrorBoundary from './components/layout/PageErrorBoundary';
 
 // Each page is downloaded only when it is first opened.
 const Login = lazy(() => import('./pages/Login'));
@@ -44,18 +45,20 @@ export default function App() {
             duration={4000}
             toastOptions={{ className: 'font-sans !bg-card !text-ink !border-line !shadow-lift !rounded-card' }}
           />
-          <Suspense fallback={<PageLoading />}>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/invite/:token" element={<InviteAccept />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
-              <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
+          <PageErrorBoundary>
+            <Suspense fallback={<PageLoading />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/invite/:token" element={<InviteAccept />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+                <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </PageErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
       </IconContext.Provider>

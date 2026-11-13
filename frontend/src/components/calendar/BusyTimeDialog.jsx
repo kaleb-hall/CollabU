@@ -66,8 +66,8 @@ function BusyTimeForm({ startAt, onDone }) {
         <Select label="Type" value={form.block_type} onChange={set('block_type')} options={TYPES} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Starts" type="datetime-local" required value={form.start_time} className="font-mono" onChange={set('start_time')} />
-        <Field label="Ends" type="datetime-local" required value={form.end_time} className="font-mono" onChange={set('end_time')} />
+        <Field label="Starts" type="datetime-local" required value={form.start_time} inputClassName="font-mono" onChange={set('start_time')} />
+        <Field label="Ends" type="datetime-local" required value={form.end_time} inputClassName="font-mono" onChange={set('end_time')} />
       </div>
 
       <fieldset className="space-y-3 rounded-card border border-line p-3">
@@ -94,7 +94,7 @@ function BusyTimeForm({ startAt, onDone }) {
               ))}
             </div>
             <Field label="Until" type="date" required min={form.start_time.slice(0, 10)} value={form.repeat_until}
-              className="font-mono" onChange={set('repeat_until')} />
+              inputClassName="font-mono" onChange={set('repeat_until')} />
           </>
         )}
       </fieldset>

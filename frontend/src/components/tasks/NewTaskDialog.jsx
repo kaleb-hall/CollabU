@@ -70,10 +70,10 @@ function NewTaskForm({ defaultProjectId, onDone }) {
           onChange={(value) => setForm({ ...form, projectId: value })}
           options={projects.map((project) => ({ value: project.id, label: project.title, dot: projectColor(project.id) }))}
         />
-        <Field label="Due" type="date" required value={form.due} className="font-mono"
+        <Field label="Due" type="date" required value={form.due} inputClassName="font-mono"
           onChange={(e) => setForm({ ...form, due: e.target.value })} />
       </div>
-      <Field label="Estimate (hours, optional)" type="number" min="0.25" step="0.25" value={form.estimate} className="font-mono"
+      <Field label="Estimate (hours, optional)" type="number" min="0.25" step="0.25" value={form.estimate} inputClassName="font-mono"
         hint="Helps Plan schedule share the work fairly."
         onChange={(e) => setForm({ ...form, estimate: e.target.value })} />
       <label className="flex items-center gap-2 text-ink-soft">

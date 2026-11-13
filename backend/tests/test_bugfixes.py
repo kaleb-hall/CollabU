@@ -125,3 +125,13 @@ def test_completed_at_follows_status(client):
     assert done['completed_at'] is not None
     reopened = client.put(f"/api/tasks/{task['id']}/status", json={'status': 'todo'}, headers=headers).get_json()['task']
     assert reopened['completed_at'] is None
+
+
+def test_suggested_task_description_does_not_repeat_project(app):
+    from datetime import timedelta
+    from app.services.task_templates import suggest_tasks
+    from app.utils.time import utcnow
+    for template in ['software_project', 'group_project', 'research_paper']:
+        description = suggest_tasks('X', '', utcnow() + timedelta(days=30), template)['tasks'][0]['description']
+        assert 'project project' not in description
+        assert description.endswith(' project')

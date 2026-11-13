@@ -158,7 +158,7 @@ def suggest_tasks(title, description, deadline, template=None):
         due = now + span * (task['order'] / len(tasks))
         suggestions.append({
             'title': task['title'],
-            'description': f"Suggested for a {name.replace('_', ' ')} project",
+            'description': f"Suggested for a {name.replace('_', ' ').removesuffix(' project')} project",
             'estimated_hours': task['hours'],
             'priority': task['priority'],
             'due_date': min(due, deadline),
