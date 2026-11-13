@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '../lib/queryClient'
 import { queryKeys } from './queryKeys'
-import { useMoveTask } from './useTasks'
+import { placeTask, useMoveTask } from './useTasks'
 import { taskService } from '../services/taskService'
 
 vi.mock('../services/taskService', () => ({ taskService: { updateTaskStatus: vi.fn() } }))
@@ -16,7 +16,7 @@ function setup() {
   const wrapper = ({ children }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   const { result } = renderHook(() => useMoveTask(7), { wrapper })
   const statusOf = (id) => queryClient.getQueryData(queryKeys.projectTasks(7)).tasks.find((t) => t.id === id).status
-  return { result, statusOf }
+  return { result, statusOf, queryClient }
 }
 
 describe('useMoveTask', () => {
@@ -40,5 +40,18 @@ describe('useMoveTask', () => {
     act(() => result.current.mutate({ taskId: 1, status: 'completed' }))
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(statusOf(1)).toBe('todo')
+  })
+
+  it('puts a card the board already moved back where it came from', async () => {
+    taskService.updateTaskStatus.mockRejectedValue({ response: { status: 500 } })
+    const { result, statusOf, queryClient } = setup()
+
+    // A drop moves the card straight away, before the request starts
+    placeTask(queryClient, 7, 2, 'blocked')
+    expect(statusOf(2)).toBe('blocked')
+
+    act(() => result.current.mutate({ taskId: 2, status: 'blocked', previousStatus: 'todo' }))
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(statusOf(2)).toBe('todo')
   })
 })

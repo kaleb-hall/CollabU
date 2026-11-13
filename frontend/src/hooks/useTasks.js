@@ -70,7 +70,17 @@ export function useUpdateTask(projectId) {
   })
 }
 
+// Puts a task in another column right now, without waiting for the server.
+// The board calls this the moment a card is dropped, so the drop can land in the new slot.
+export function placeTask(queryClient, projectId, taskId, status) {
+  queryClient.setQueryData(queryKeys.projectTasks(projectId), (data) => data && {
+    ...data,
+    tasks: data.tasks.map((task) => (task.id === taskId ? { ...task, status } : task)),
+  })
+}
+
 // Moves the card right away, then puts it back if the server says no.
+// Pass previousStatus when the card was already placed (after a drop).
 export function useMoveTask(projectId) {
   const queryClient = useQueryClient()
   const invalidate = useInvalidateTasks(projectId)
@@ -78,16 +88,14 @@ export function useMoveTask(projectId) {
 
   return useMutation({
     mutationFn: ({ taskId, status }) => taskService.updateTaskStatus(taskId, status),
-    onMutate: async ({ taskId, status }) => {
+    onMutate: async ({ taskId, status, previousStatus }) => {
+      const before = previousStatus ?? queryClient.getQueryData(key)?.tasks.find((task) => task.id === taskId)?.status
       await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData(key)
-      queryClient.setQueryData(key, (data) => data && {
-        ...data,
-        tasks: data.tasks.map((task) => (task.id === taskId ? { ...task, status } : task)),
-      })
-      return { previous }
+      // Again after cancelling, since cancelling a refetch can restore older data
+      placeTask(queryClient, projectId, taskId, status)
+      return { taskId, before }
     },
-    onError: (_error, _variables, context) => queryClient.setQueryData(key, context.previous),
+    onError: (_error, _variables, context) => placeTask(queryClient, projectId, context.taskId, context.before),
     onSettled: invalidate,
   })
 }
