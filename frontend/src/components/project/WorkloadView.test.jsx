@@ -19,7 +19,12 @@ describe('WorkloadView', () => {
     renderWithProviders(<WorkloadView projectId={4} />)
 
     const sam = (await screen.findByText('Sam Kim')).closest('li')
-    expect(within(sam).getByText('40h of work, 12.5h free')).toBeInTheDocument()
+    // Work due and free time each get their own labeled line with the hours beside the bar
+    const work = within(sam).getByRole('meter', { name: 'Work due' })
+    expect(work).toHaveAttribute('aria-valuenow', '40')
+    expect(within(sam).getByRole('meter', { name: 'Free time' })).toHaveAttribute('aria-valuenow', '12.5')
+    expect(within(sam).getByText('40h')).toBeInTheDocument()
+    expect(within(sam).getByText('12.5h')).toBeInTheDocument()
     expect(within(sam).getByText('Over by 27.5h')).toBeInTheDocument()
     const ana = screen.getByText('Ana Lee').closest('li')
     expect(within(ana).queryByText(/Over by/)).not.toBeInTheDocument()

@@ -18,7 +18,7 @@ export default function WorkloadView({ projectId }) {
 
   return (
     <section className="rounded-card border border-line bg-card">
-      <div className="border-b border-line px-4 py-3">
+      <div className="border-b border-line px-5 py-3">
         <h2 className="font-semibold text-ink">
           This week <span className="ml-1 font-mono text-xs font-normal text-ink-faint">{formatShortDate(week_start)} to {formatShortDate(lastDay)}</span>
         </h2>
@@ -28,29 +28,42 @@ export default function WorkloadView({ projectId }) {
       </div>
       <ul>
         {members.map((member) => (
-          <li key={member.user_id} className="border-b border-line px-4 py-3 last:border-b-0">
-            <div className="flex items-center justify-between gap-4">
+          <li key={member.user_id} className="border-b border-line px-5 py-4 last:border-b-0">
+            <div className="flex items-baseline justify-between gap-4">
               <span className="font-medium text-ink">{member.name}</span>
-              <span className="font-mono text-xs text-ink-soft">{hours(member.assigned_hours)} of work, {hours(member.free_hours)} free</span>
+              {member.overloaded && (
+                <span className="text-xs font-semibold text-accent">Over by {hours(member.assigned_hours - member.free_hours)}</span>
+              )}
             </div>
-            <div className="mt-2 grid gap-1" aria-hidden="true">
-              <div className="h-1.5 rounded-full bg-paper-deep">
-                <div className={`h-full rounded-full ${member.overloaded ? 'bg-accent' : 'bg-status-progress'}`} style={{ width: `${(member.assigned_hours / scale) * 100}%` }} />
-              </div>
-              <div className="h-1.5 rounded-full bg-paper-deep">
-                <div className="h-full rounded-full bg-status-done" style={{ width: `${(member.free_hours / scale) * 100}%` }} />
-              </div>
+            <div className="mt-3 space-y-2.5">
+              <BarLine label="Work due" value={member.assigned_hours} scale={scale}
+                fill={member.overloaded ? 'bg-accent' : 'bg-status-progress'} />
+              <BarLine label="Free time" value={member.free_hours} scale={scale} fill="bg-status-done" />
             </div>
-            {member.overloaded && (
-              <p className="mt-1.5 text-xs font-semibold text-accent">Over by {hours(member.assigned_hours - member.free_hours)}</p>
-            )}
           </li>
         ))}
       </ul>
-      <p className="flex gap-4 border-t border-line px-4 py-2 text-xs text-ink-faint">
-        <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-1.5 w-3 rounded-full bg-status-progress" />Work due</span>
-        <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-1.5 w-3 rounded-full bg-status-done" />Free time</span>
-      </p>
     </section>
+  );
+}
+
+// One labeled line: what it is, a bar on the shared scale, and the hours lined up on the right
+function BarLine({ label, value, scale, fill }) {
+  return (
+    <div className="grid grid-cols-[5.5rem_1fr_3.5rem] items-center gap-3">
+      <span className="text-xs text-ink-soft">{label}</span>
+      <div
+        role="meter"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={scale}
+        aria-valuenow={value}
+        aria-valuetext={hours(value)}
+        className="h-2 overflow-hidden rounded-full bg-paper-deep"
+      >
+        <div className={`h-full rounded-full ${fill}`} style={{ width: `${(value / scale) * 100}%` }} />
+      </div>
+      <span className="text-right font-mono text-xs text-ink">{hours(value)}</span>
+    </div>
   );
 }
