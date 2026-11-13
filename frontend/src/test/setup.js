@@ -11,3 +11,4 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 }
 if (typeof Element !== "undefined") Element.prototype.scrollIntoView ??= function scrollIntoView() {}
+if (typeof document !== "undefined") document.elementFromPoint ??= () => null
