@@ -100,6 +100,35 @@ describe('Home', () => {
     expect(await within(region).findByText('Draft intro')).toBeInTheDocument()
   })
 
+  it('ticks the box and lets the row drift away before it disappears', async () => {
+    setup()
+    const region = await myWork()
+    const box = within(region).getByRole('checkbox', { name: 'Mark "Draft intro" done' })
+    await userEvent.click(box)
+
+    // Right after the click: ticked, struck through, leaving, and not saved yet
+    expect(box).toHaveAttribute('aria-checked', 'true')
+    const row = within(region).getByText('Draft intro').closest('li')
+    expect(row).toHaveAttribute('data-leaving', 'true')
+    expect(taskService.updateTaskStatus).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(within(region).queryByText('Draft intro')).not.toBeInTheDocument())
+    expect(taskService.updateTaskStatus).toHaveBeenCalledWith(13, 'completed')
+  })
+
+  it('skips the animation for people who prefer reduced motion', async () => {
+    const original = window.matchMedia
+    window.matchMedia = (query) => ({ matches: query.includes('reduce'), media: query, addEventListener() {}, removeEventListener() {} })
+    try {
+      setup()
+      const region = await myWork()
+      await userEvent.click(within(region).getByRole('checkbox', { name: 'Mark "Draft intro" done' }))
+      expect(taskService.updateTaskStatus).toHaveBeenCalledWith(13, 'completed')
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
   it('opens the new task dialog from the add row', async () => {
     setup()
     await userEvent.click(within(await myWork()).getByRole('button', { name: 'Add a task' }))
