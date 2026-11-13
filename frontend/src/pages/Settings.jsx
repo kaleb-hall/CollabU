@@ -1,26 +1,45 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import AppShell from '../components/layout/AppShell';
+import Button from '../components/ui/Button';
+import ErrorState from '../components/ui/ErrorState';
+import Field from '../components/ui/Field';
+import Skeleton from '../components/ui/Skeleton';
 import { useChangePassword, useMe, useUpdateProfile } from '../hooks/useSettings';
 import { getErrorMessage } from '../lib/errors';
 
 export default function Settings() {
-  const navigate = useNavigate();
-  const me = useMe();
-
   return (
-    <div className="min-h-screen px-4 py-10">
-      <div className="max-w-lg mx-auto space-y-6">
-        <button type="button" onClick={() => navigate('/dashboard')} className="text-blue-600 font-medium">
-          Back to dashboard
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        {me.isPending && <p className="text-gray-600">Loading your settings...</p>}
-        {me.isError && <p className="text-red-600">{getErrorMessage(me.error)}</p>}
+    <AppShell>
+      <SettingsPage />
+    </AppShell>
+  );
+}
+
+function SettingsPage() {
+  const me = useMe();
+  return (
+    <div className="max-w-2xl">
+      <h1 className="mb-6 font-display text-3xl text-ink">Settings</h1>
+      <div className="space-y-6">
+        {me.isPending && <Skeleton className="h-64" />}
+        {me.isError && <ErrorState title="Could not load your settings" error={me.error} onRetry={me.refetch} />}
         {me.isSuccess && <ProfileForm user={me.data} />}
         <PasswordForm />
       </div>
     </div>
+  );
+}
+
+function Section({ title, description, children, onSubmit }) {
+  return (
+    <form onSubmit={onSubmit} className="rounded-card border border-line bg-card">
+      <div className="border-b border-line px-5 py-3">
+        <h2 className="font-semibold text-ink">{title}</h2>
+        {description && <p className="mt-0.5 text-ink-soft">{description}</p>}
+      </div>
+      <div className="space-y-4 px-5 py-5">{children}</div>
+    </form>
   );
 }
 
@@ -41,30 +60,25 @@ function ProfileForm({ user }) {
   };
 
   return (
-    <form onSubmit={submit} className="card space-y-4" aria-labelledby="profile-title">
-      <h2 id="profile-title" className="text-xl font-bold text-gray-900">Profile</h2>
-      <p className="text-sm text-gray-600">Signed in as {user.email}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <Section title="Profile" description={`Signed in as ${user.email}`} onSubmit={submit}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="First name" required maxLength={50} value={form.first_name}
+          onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+        <Field label="Last name" required maxLength={50} value={form.last_name}
+          onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+      </div>
+      <div className="flex items-start gap-3">
+        <input id="email-notifications" type="checkbox" className="mt-0.5" aria-describedby="email-notifications-hint"
+          checked={form.email_notifications} onChange={(e) => setForm({ ...form, email_notifications: e.target.checked })} />
         <div>
-          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">First name</label>
-          <input id="first_name" required maxLength={50} className="input" value={form.first_name}
-            onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
-        </div>
-        <div>
-          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
-          <input id="last_name" required maxLength={50} className="input" value={form.last_name}
-            onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+          <label htmlFor="email-notifications" className="block font-medium text-ink">Email me about invites and tasks due soon</label>
+          <p id="email-notifications-hint" className="text-xs text-ink-faint">One digest a day at most. In-app notifications always stay on.</p>
         </div>
       </div>
-      <label className="flex items-center gap-3 text-sm text-gray-700">
-        <input type="checkbox" checked={form.email_notifications}
-          onChange={(e) => setForm({ ...form, email_notifications: e.target.checked })} />
-        Email me about invites and tasks due soon
-      </label>
-      <button type="submit" disabled={update.isPending} className="btn-primary disabled:opacity-50">
-        {update.isPending ? 'Saving...' : 'Save profile'}
-      </button>
-    </form>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={update.isPending}>{update.isPending ? 'Saving...' : 'Save profile'}</Button>
+      </div>
+    </Section>
   );
 }
 
@@ -74,6 +88,7 @@ function PasswordForm() {
   const [form, setForm] = useState(EMPTY_PASSWORDS);
   const [problem, setProblem] = useState(null);
   const change = useChangePassword();
+  const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   const submit = (e) => {
     e.preventDefault();
@@ -91,25 +106,17 @@ function PasswordForm() {
     });
   };
 
-  const field = (id, label, key, autoComplete) => (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input id={id} type="password" required autoComplete={autoComplete} className="input" value={form[key]}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
-    </div>
-  );
-
   return (
-    <form onSubmit={submit} className="card space-y-4" aria-labelledby="password-title">
-      <h2 id="password-title" className="text-xl font-bold text-gray-900">Password</h2>
-      {field('current-password', 'Current password', 'current', 'current-password')}
-      {field('new-password', 'New password', 'next', 'new-password')}
-      {field('new-password-again', 'Type the new password again', 'again', 'new-password')}
-      <p className="text-xs text-gray-500">At least 8 characters with an uppercase letter and a number.</p>
-      {problem && <p role="alert" className="text-sm text-red-700">{problem}</p>}
-      <button type="submit" disabled={change.isPending} className="btn-primary disabled:opacity-50">
-        {change.isPending ? 'Changing...' : 'Change password'}
-      </button>
-    </form>
+    <Section title="Password" description="At least 8 characters with an uppercase letter and a number." onSubmit={submit}>
+      <Field label="Current password" type="password" required autoComplete="current-password" value={form.current} onChange={set('current')} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="New password" type="password" required autoComplete="new-password" value={form.next} onChange={set('next')} />
+        <Field label="Type the new password again" type="password" required autoComplete="new-password" value={form.again} onChange={set('again')} />
+      </div>
+      {problem && <p role="alert" className="font-medium text-accent">{problem}</p>}
+      <div className="flex justify-end">
+        <Button type="submit" disabled={change.isPending}>{change.isPending ? 'Changing...' : 'Change password'}</Button>
+      </div>
+    </Section>
   );
 }

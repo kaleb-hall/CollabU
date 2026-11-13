@@ -41,10 +41,7 @@
 }
 
 @layer base {
-  /* Tailwind v4 changed these defaults; keep the v3 behavior the older pages expect */
-  *, ::after, ::before, ::backdrop, ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
+  /* Tailwind v4 dropped the pointer cursor on buttons; keep it */
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
   }
@@ -90,31 +87,11 @@
   );
 }
 
-/* Shared form styles, used by pages until they get their own components */
-@layer components {
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-card bg-ink px-4 py-2 font-semibold text-paper transition-colors hover:bg-ink-soft disabled:opacity-50;
-  }
-
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-card border border-line bg-card px-4 py-2 font-semibold text-ink transition-colors hover:bg-paper-deep;
-  }
-
-  /* Flat at rest: shadows are only for things that float (menus, dialogs, dragged cards) */
-  .card {
-    @apply rounded-card border border-line bg-card p-6;
-  }
-
-  .input {
-    @apply w-full rounded-card border border-line bg-card px-3 py-2 text-ink placeholder:text-ink-faint;
-  }
-}
-
 /*
   The calendar (react-big-calendar) in our tokens: mono times, notebook rules on the
   time grid, tasks as cards with a project color edge, busy time hatched like blocked-off paper.
 */
-@layer components {
+/* Not in a layer: react-big-calendar's own CSS is unlayered, and layered rules always lose to it */
   .collabu-calendar .rbc-calendar { font-family: var(--font-sans); color: var(--ink); }
   .collabu-calendar .rbc-month-view,
   .collabu-calendar .rbc-time-view,
@@ -186,4 +163,3 @@
   .cal-key { display: inline-block; width: 0.875rem; height: 0.625rem; border-radius: 2px; border: 1px solid var(--line); }
   .cal-key-task { background: var(--card); border-left: 3px solid var(--dot-1); }
   .cal-key-block { background: repeating-linear-gradient(-45deg, var(--paper-deep) 0 3px, var(--paper) 3px 6px); }
-}

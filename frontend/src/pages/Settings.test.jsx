@@ -5,6 +5,8 @@ import Settings from './Settings'
 import { userService } from '../services/userService'
 import { renderWithProviders } from '../test/render'
 
+vi.mock('../services/notificationService', () => ({ notificationService: { unreadCount: vi.fn().mockResolvedValue({ unread_count: 0 }) } }))
+vi.mock('../services/projectService', () => ({ projectService: { getProjects: vi.fn().mockResolvedValue({ projects: [] }) } }))
 vi.mock('../services/userService', () => ({
   userService: { me: vi.fn(), updateProfile: vi.fn(), changePassword: vi.fn() },
 }))

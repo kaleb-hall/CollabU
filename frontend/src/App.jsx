@@ -23,10 +23,10 @@ function ProtectedRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
+// Shown for the split second a page's code downloads: the empty frame, no spinner
 function PageLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center" role="status">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+    <div className="min-h-screen bg-paper-deep" role="status">
       <span className="sr-only">Loading</span>
     </div>
   );
