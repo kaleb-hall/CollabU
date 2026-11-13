@@ -10,7 +10,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { LayoutGroup, motion, MotionConfig } from 'motion/react';
+import { LayoutGroup, LazyMotion, m, MotionConfig } from 'motion/react';
 import { toast } from 'sonner';
 import TaskCard from './TaskCard';
 import { useMoveTask } from '../../hooks/useTasks';
@@ -19,7 +19,8 @@ import { getErrorMessage } from '../../lib/errors';
 import { STATUSES, statusInfo } from '../../lib/status';
 import { cx } from '../../lib/cx';
 
-const MotionLi = motion.li;
+const MotionLi = m.li;
+const loadMotionFeatures = () => import('./motionFeatures').then((module) => module.default);
 
 // The kanban board: drag cards between columns (mouse, touch or keyboard),
 // or use each card's menu. Cards glide to their new column.
@@ -46,6 +47,7 @@ export default function Board({ projectId, tasks, onOpenTask }) {
 
   return (
     <MotionConfig reducedMotion="user">
+      <LazyMotion features={loadMotionFeatures} strict>
       <DndContext
         sensors={sensors}
         accessibility={{ announcements: announcements(tasks) }}
@@ -69,6 +71,7 @@ export default function Board({ projectId, tasks, onOpenTask }) {
           {dragging && <TaskCard task={dragging} lifted />}
         </DragOverlay>
       </DndContext>
+      </LazyMotion>
     </MotionConfig>
   );
 }
