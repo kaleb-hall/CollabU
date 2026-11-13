@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import AuthLayout from '../components/auth/AuthLayout';
+import Button from '../components/ui/Button';
+import Field from '../components/ui/Field';
 import { useAuth } from '../hooks/useAuth';
 import { getErrorMessage } from '../lib/errors';
 import { getPendingInvite } from '../lib/pendingInvite';
-import { toast } from 'sonner';
 
 export default function Login() {
   const [email, setEmail] = useState(() => getPendingInvite()?.email ?? '');
@@ -12,85 +15,34 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await login({ email, password });
-      toast.success('Welcome back!');
       const pending = getPendingInvite();
       navigate(pending ? `/invite/${pending.token}` : '/dashboard');
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Login failed'));
-    } finally {
+      toast.error(getErrorMessage(error, 'Could not log in'));
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-4xl font-extrabold text-gray-900">
-            CollabU
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Never miss a deadline again
-          </p>
-        </div>
-        
-        <div className="card">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="input mt-1"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="input mt-1"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-
-            <p className="text-center text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
-                Sign up
-              </Link>
-            </p>
-          </form>
-        </div>
-      </div>
-    </div>
+    <AuthLayout
+      title="Log in"
+      subtitle="Pick up where your group left off."
+      footer={<>New here? <Link to="/register" className="font-semibold text-ink underline underline-offset-4">Create an account</Link></>}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="Email" type="email" required autoComplete="email" value={email}
+          onChange={(e) => setEmail(e.target.value)} />
+        <Field label="Password" type="password" required autoComplete="current-password" value={password}
+          onChange={(e) => setPassword(e.target.value)} />
+        <Button type="submit" disabled={loading} className="w-full justify-center">
+          {loading ? 'Logging in...' : 'Log in'}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }
