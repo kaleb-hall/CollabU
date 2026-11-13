@@ -62,14 +62,6 @@ export function useSetMyTaskStatus() {
   })
 }
 
-export function useCreateTask(projectId) {
-  const invalidate = useInvalidateTasks(projectId)
-  return useMutation({
-    mutationFn: (task) => taskService.createTask(projectId, task),
-    onSuccess: invalidate,
-  })
-}
-
 export function useUpdateTask(projectId) {
   const invalidate = useInvalidateTasks(projectId)
   return useMutation({
@@ -104,6 +96,14 @@ export function useCalculateSchedule(projectId) {
   const invalidate = useInvalidateTasks(projectId)
   return useMutation({
     mutationFn: (timeZone) => taskService.calculateSchedule(projectId, timeZone),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteTask(projectId) {
+  const invalidate = useInvalidateTasks(projectId)
+  return useMutation({
+    mutationFn: (taskId) => taskService.deleteTask(taskId),
     onSuccess: invalidate,
   })
 }

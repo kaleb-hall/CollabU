@@ -29,7 +29,7 @@ export default function MyWork({ tasks }) {
       </div>
       <button
         type="button"
-        onClick={openNewTask}
+        onClick={() => openNewTask()}
         className="flex w-full items-center gap-3 border-b border-line px-4 py-2.5 text-left text-ink-faint hover:bg-paper hover:text-ink"
       >
         <Plus size={16} weight="bold" aria-hidden="true" />

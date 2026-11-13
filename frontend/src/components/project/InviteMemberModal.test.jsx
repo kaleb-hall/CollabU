@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import InviteMemberModal from './InviteMemberModal'
-import { inviteService } from '../services/inviteService'
-import { renderWithProviders } from '../test/render'
+import { inviteService } from '../../services/inviteService'
+import { renderWithProviders } from '../../test/render'
 
-vi.mock('../services/inviteService', () => ({
+vi.mock('../../services/inviteService', () => ({
   inviteService: { listForProject: vi.fn(), create: vi.fn(), cancel: vi.fn() },
 }))
 
@@ -13,7 +13,7 @@ function setup() {
   inviteService.listForProject.mockResolvedValue({ invites: [{ id: 7, email: 'lee@example.com', role: 'member', status: 'pending' }] })
   inviteService.create.mockResolvedValue({ invite: { id: 8 } })
   inviteService.cancel.mockResolvedValue()
-  renderWithProviders(<InviteMemberModal projectId={4} onClose={() => {}} />)
+  renderWithProviders(<InviteMemberModal projectId={4} open onOpenChange={() => {}} />)
 }
 
 describe('InviteMemberModal', () => {

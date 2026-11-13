@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ActivityFeed from './ActivityFeed'
-import { projectService } from '../services/projectService'
-import { renderWithProviders } from '../test/render'
+import { projectService } from '../../services/projectService'
+import { renderWithProviders } from '../../test/render'
 
-vi.mock('../services/projectService', () => ({ projectService: { getActivity: vi.fn() } }))
+vi.mock('../../services/projectService', () => ({ projectService: { getActivity: vi.fn() } }))
 
 const entry = (id, description) => ({ id, description, created_at: new Date().toISOString(), action: 'task_created' })
 

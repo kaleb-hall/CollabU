@@ -84,7 +84,7 @@ export default function SearchBar({ focusRequest, onNewTask, onNewProject, onDon
               </Command.Group>
             )}
             <Command.Group heading="Create">
-              <Command.Item value="new task" onSelect={() => run(onNewTask)} className={ITEM}>
+              <Command.Item value="new task" onSelect={() => run(() => onNewTask())} className={ITEM}>
                 <CheckSquareOffset size={18} aria-hidden="true" />New task
               </Command.Item>
               <Command.Item value="new project" onSelect={() => run(onNewProject)} className={ITEM}>

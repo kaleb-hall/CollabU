@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import WorkloadView from './WorkloadView'
-import { projectService } from '../services/projectService'
-import { renderWithProviders } from '../test/render'
+import { projectService } from '../../services/projectService'
+import { renderWithProviders } from '../../test/render'
 
-vi.mock('../services/projectService', () => ({ projectService: { getWorkload: vi.fn() } }))
+vi.mock('../../services/projectService', () => ({ projectService: { getWorkload: vi.fn() } }))
 
 describe('WorkloadView', () => {
   it('shows each member and flags anyone over capacity', async () => {

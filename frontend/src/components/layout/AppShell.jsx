@@ -20,6 +20,7 @@ export default function AppShell({ children }) {
   const [dialog, setDialog] = useState(null); // 'task' | 'project' | 'projects'
   const [searchFocus, setSearchFocus] = useState(0); // bump to put the cursor in the search box
   const [phoneSearch, setPhoneSearch] = useState(false);
+  const [taskProjectId, setTaskProjectId] = useState(null); // preselected project for New task
   // Once a dialog has been opened it stays mounted, so its closing animation can play
   const [loaded, setLoaded] = useState(() => new Set());
   if (dialog && !loaded.has(dialog)) setLoaded(new Set(loaded).add(dialog));
@@ -37,7 +38,10 @@ export default function AppShell({ children }) {
 
   const actions = useMemo(() => ({
     openSearch: () => setSearchFocus((count) => count + 1),
-    openNewTask: () => setDialog('task'),
+    openNewTask: (projectId = null) => {
+      setTaskProjectId(projectId);
+      setDialog('task');
+    },
     openNewProject: () => setDialog('project'),
   }), []);
 
@@ -77,7 +81,7 @@ export default function AppShell({ children }) {
       </div>
 
       <Suspense fallback={null}>
-        {loaded.has('task') && <NewTaskDialog open={dialog === 'task'} onOpenChange={closer('task')} />}
+        {loaded.has('task') && <NewTaskDialog open={dialog === 'task'} onOpenChange={closer('task')} projectId={taskProjectId} />}
         {loaded.has('project') && <NewProjectDialog open={dialog === 'project'} onOpenChange={closer('project')} />}
       </Suspense>
       <Drawer open={dialog === 'projects'} onOpenChange={closer('projects')} title="Projects">

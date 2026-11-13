@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TaskComments from './TaskComments'
-import { commentService } from '../services/commentService'
-import { renderWithProviders } from '../test/render'
+import { commentService } from '../../services/commentService'
+import { renderWithProviders } from '../../test/render'
 
-vi.mock('../services/commentService', () => ({
+vi.mock('../../services/commentService', () => ({
   commentService: { list: vi.fn(), add: vi.fn(), remove: vi.fn() },
 }))
 

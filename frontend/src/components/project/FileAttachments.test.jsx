@@ -3,10 +3,10 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import FileAttachments from './FileAttachments'
-import { fileService } from '../services/fileService'
-import { renderWithProviders } from '../test/render'
+import { fileService } from '../../services/fileService'
+import { renderWithProviders } from '../../test/render'
 
-vi.mock('../services/fileService', () => ({
+vi.mock('../../services/fileService', () => ({
   fileService: { list: vi.fn(), upload: vi.fn(), download: vi.fn(), remove: vi.fn() },
 }))
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }) }))

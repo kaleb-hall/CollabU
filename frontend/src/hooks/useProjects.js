@@ -42,3 +42,15 @@ export function useWorkload(projectId) {
     queryFn: () => projectService.getWorkload(projectId),
   })
 }
+
+export function useRemoveMember(projectId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (memberId) => projectService.removeMember(projectId, memberId),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.workload(projectId) }),
+    ]),
+  })
+}

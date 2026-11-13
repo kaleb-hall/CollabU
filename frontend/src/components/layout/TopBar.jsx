@@ -52,7 +52,7 @@ function CreateMenu({ onNewTask, onNewProject }) {
       <Menu.Portal>
         <Menu.Positioner sideOffset={6} align="end" className="z-50">
           <Menu.Popup className={MENU_POPUP}>
-            <MenuItem icon={CheckSquareOffset} onClick={onNewTask}>New task</MenuItem>
+            <MenuItem icon={CheckSquareOffset} onClick={() => onNewTask()}>New task</MenuItem>
             <MenuItem icon={FolderSimplePlus} onClick={onNewProject}>New project</MenuItem>
           </Menu.Popup>
         </Menu.Positioner>
