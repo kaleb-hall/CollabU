@@ -61,20 +61,53 @@ describe('AppShell', () => {
     expect(localStorage.getItem('collabu.sidebarCollapsed')).toBe('true')
   })
 
-  it('opens the command menu with Ctrl+K and jumps to a project', async () => {
+  it('searches right in the top bar and jumps to a project', async () => {
     setup()
     await screen.findAllByText('History essay')
-    await userEvent.keyboard('{Control>}k{/Control}')
-    const input = await screen.findByPlaceholderText('Search projects and actions')
-    await userEvent.type(input, 'chem')
+    const search = await screen.findByRole('combobox', { name: 'Search or jump to' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+
+    await userEvent.click(search)
+    expect(await screen.findByRole('listbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await userEvent.type(search, 'chem')
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Chem lab'])
     await userEvent.click(await screen.findByRole('option', { name: /Chem lab/ }))
     expect(await screen.findByText('Landed on another page')).toBeInTheDocument()
   })
 
-  it('opens the command menu from the search button', async () => {
+  it('puts the cursor in the top bar search with Ctrl+K', async () => {
     setup()
-    await userEvent.click(screen.getByRole('button', { name: /Search or jump to/ }))
-    expect(await screen.findByPlaceholderText('Search projects and actions')).toBeInTheDocument()
+    await userEvent.keyboard('{Control>}k{/Control}')
+    await waitFor(async () => expect(await screen.findByRole('combobox', { name: 'Search or jump to' })).toHaveFocus())
+    expect(await screen.findByRole('listbox')).toBeInTheDocument()
+  })
+
+  it('runs a result with the keyboard and closes with Escape', async () => {
+    setup()
+    await screen.findAllByText('History essay')
+    const search = await screen.findByRole('combobox', { name: 'Search or jump to' })
+    await userEvent.click(search)
+    await userEvent.type(search, 'new task')
+    await userEvent.keyboard('{Enter}')
+    expect(await screen.findByRole('dialog', { name: 'New task' })).toBeInTheDocument()
+    expect(search).toHaveValue('')
+
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(search)
+    await screen.findByRole('listbox')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument())
+  })
+
+  it('opens the same search from the phone navigation', async () => {
+    setup()
+    const phoneNav = screen.getByRole('navigation', { name: 'Phone navigation' })
+    await userEvent.click(within(phoneNav).getByRole('button', { name: 'Search' }))
+    await waitFor(async () => expect(await screen.findByRole('combobox', { name: 'Search or jump to' })).toHaveFocus())
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel search' }))
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument())
   })
 
   it('creates a task from the Create menu, assigned to me', async () => {

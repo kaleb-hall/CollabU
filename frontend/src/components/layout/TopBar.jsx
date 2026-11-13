@@ -1,26 +1,39 @@
+import { lazy, Suspense } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Menu } from '@base-ui/react/menu';
 import { CheckSquareOffset, FolderSimplePlus, GearSix, MagnifyingGlass, Plus, SignOut } from '@phosphor-icons/react';
 import NotificationBell from '../NotificationBell';
 import { useAuth } from '../../hooks/useAuth';
+import { cx } from '../../lib/cx';
 import { modKey } from '../../lib/platform';
+
+// The search code downloads right after the page appears, so it never delays the first paint
+const SearchBar = lazy(() => import('./SearchBar'));
+const SEARCH_LABEL = 'Search or jump to';
 
 const MENU_POPUP = 'min-w-48 rounded-card border border-line bg-card p-1 shadow-lift transition-opacity data-[starting-style]:opacity-0 data-[ending-style]:opacity-0';
 
-export default function TopBar({ onSearch, onNewTask, onNewProject }) {
+// On phones the search is hidden until `phoneSearch` is on; then it fills the bar.
+export default function TopBar({ searchFocus, phoneSearch, onEndPhoneSearch, onNewTask, onNewProject }) {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 bg-paper-deep/95 px-4 backdrop-blur-sm md:bg-transparent md:pl-0 md:backdrop-blur-none">
-      <NavLink to="/dashboard" className="font-display text-xl text-ink md:hidden">CollabU</NavLink>
-      <button
-        type="button"
-        onClick={onSearch}
-        className="hidden h-9 w-full max-w-md items-center gap-2 rounded-card border border-line bg-card px-3 text-ink-faint hover:border-ink-faint md:flex"
-      >
-        <MagnifyingGlass size={16} aria-hidden="true" />
-        <span className="flex-1 text-left">Search or jump to</span>
-        <kbd className="rounded-sm border border-line px-1.5 font-mono text-[0.6875rem]">{modKey} K</kbd>
-      </button>
-      <div className="ml-auto flex items-center gap-1">
+      <NavLink to="/dashboard" className={cx('font-display text-xl text-ink md:hidden', phoneSearch && 'hidden')}>CollabU</NavLink>
+      <div className={cx('w-full max-w-md', phoneSearch ? 'block' : 'hidden md:block')}>
+        <Suspense fallback={<SearchPlaceholder />}>
+          <SearchBar
+            focusRequest={searchFocus}
+            onNewTask={onNewTask}
+            onNewProject={onNewProject}
+            onDone={onEndPhoneSearch}
+          />
+        </Suspense>
+      </div>
+      {phoneSearch && (
+        <button type="button" onClick={onEndPhoneSearch} aria-label="Cancel search" className="shrink-0 font-semibold text-ink-soft md:hidden">
+          Cancel
+        </button>
+      )}
+      <div className={cx('ml-auto items-center gap-1', phoneSearch ? 'hidden md:flex' : 'flex')}>
         <CreateMenu onNewTask={onNewTask} onNewProject={onNewProject} />
         <NotificationBell />
         <AccountMenu />
@@ -87,5 +100,16 @@ function MenuItem({ icon: Icon, children, onClick }) {
       <Icon size={16} aria-hidden="true" />
       {children}
     </Menu.Item>
+  );
+}
+
+// Looks like the search box while its code finishes downloading
+function SearchPlaceholder() {
+  return (
+    <div className="flex h-9 items-center gap-2 rounded-card border border-line bg-card px-3 text-ink-faint">
+      <MagnifyingGlass size={16} aria-hidden="true" />
+      <span className="flex-1">{SEARCH_LABEL}</span>
+      <kbd className="hidden rounded-sm border border-line px-1.5 font-mono text-[0.6875rem] md:inline">{modKey} K</kbd>
+    </div>
   );
 }

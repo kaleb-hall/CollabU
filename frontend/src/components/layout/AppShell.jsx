@@ -10,7 +10,6 @@ import TopBar from './TopBar';
 const COLLAPSED_KEY = 'collabu.sidebarCollapsed';
 
 // These are only needed once someone opens them, so they download on first use
-const CommandMenu = lazy(() => import('./CommandMenu'));
 const NewTaskDialog = lazy(() => import('../tasks/NewTaskDialog'));
 const NewProjectDialog = lazy(() => import('../projects/NewProjectDialog'));
 
@@ -18,7 +17,9 @@ const NewProjectDialog = lazy(() => import('../projects/NewProjectDialog'));
 // a sidebar on a tinted frame, and the page itself on a paper sheet.
 export default function AppShell({ children }) {
   const [collapsed, setCollapsed] = useState(() => readFlag(COLLAPSED_KEY));
-  const [dialog, setDialog] = useState(null); // 'command' | 'task' | 'project' | 'projects'
+  const [dialog, setDialog] = useState(null); // 'task' | 'project' | 'projects'
+  const [searchFocus, setSearchFocus] = useState(0); // bump to put the cursor in the search box
+  const [phoneSearch, setPhoneSearch] = useState(false);
   // Once a dialog has been opened it stays mounted, so its closing animation can play
   const [loaded, setLoaded] = useState(() => new Set());
   if (dialog && !loaded.has(dialog)) setLoaded(new Set(loaded).add(dialog));
@@ -27,7 +28,7 @@ export default function AppShell({ children }) {
     const onKey = (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setDialog((current) => (current === 'command' ? null : 'command'));
+        setSearchFocus((count) => count + 1);
       }
     };
     document.addEventListener('keydown', onKey);
@@ -35,7 +36,7 @@ export default function AppShell({ children }) {
   }, []);
 
   const actions = useMemo(() => ({
-    openCommand: () => setDialog('command'),
+    openSearch: () => setSearchFocus((count) => count + 1),
     openNewTask: () => setDialog('task'),
     openNewProject: () => setDialog('project'),
   }), []);
@@ -55,7 +56,13 @@ export default function AppShell({ children }) {
         </a>
         <Sidebar collapsed={collapsed} onToggle={toggleSidebar} onNewProject={actions.openNewProject} />
         <div className="flex min-w-0 flex-1 flex-col md:pr-3">
-          <TopBar onSearch={actions.openCommand} onNewTask={actions.openNewTask} onNewProject={actions.openNewProject} />
+          <TopBar
+            searchFocus={searchFocus}
+            phoneSearch={phoneSearch}
+            onEndPhoneSearch={() => setPhoneSearch(false)}
+            onNewTask={actions.openNewTask}
+            onNewProject={actions.openNewProject}
+          />
           <main
             id="main"
             className="flex-1 bg-paper px-4 pb-24 pt-6 md:mb-3 md:rounded-xl md:border md:border-line md:px-8 md:pb-8"
@@ -63,14 +70,13 @@ export default function AppShell({ children }) {
             <div className="mx-auto max-w-6xl">{children}</div>
           </main>
         </div>
-        <MobileNav onProjects={() => setDialog('projects')} onSearch={actions.openCommand} />
+        <MobileNav
+          onProjects={() => setDialog('projects')}
+          onSearch={() => { setPhoneSearch(true); actions.openSearch(); }}
+        />
       </div>
 
       <Suspense fallback={null}>
-        {loaded.has('command') && (
-          <CommandMenu open={dialog === 'command'} onOpenChange={closer('command')}
-            onNewTask={actions.openNewTask} onNewProject={actions.openNewProject} />
-        )}
         {loaded.has('task') && <NewTaskDialog open={dialog === 'task'} onOpenChange={closer('task')} />}
         {loaded.has('project') && <NewProjectDialog open={dialog === 'project'} onOpenChange={closer('project')} />}
       </Suspense>
