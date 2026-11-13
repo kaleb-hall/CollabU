@@ -295,6 +295,12 @@ Too much for one phase, so I split it. Each part ends with a stop for your OK.
 
 **Dashboard round 2 (after your "still looks AI" feedback):** rebuilt after researching Atlassian's and Google's redesigns. App frame with a project sidebar (collapsible), search and Create in the top bar, Ctrl/Cmd+K command menu, phone bottom bar with a projects drawer. Home is now My work (grouped Late, Today, Next 7 days, Later, check off in place with Undo) beside a compact project list. 14px body text, flat surfaces, serif only for the wordmark and page titles, status labels. 132 frontend tests.
 
+**Phase 3 results (all pages restyled, branch `phase-3-design`):** login, register and invite on one quiet card; project page with header, Base UI tabs (Board, Workload, Activity, Files, Team), a dnd-kit kanban (mouse, touch and keyboard, plus a Move to menu), index-card tasks that tilt while lifted and glide between columns, a task side panel with delete after confirming, and admin member removal; calendar with its own toolbar, mono times, notebook rules and hatched busy time; settings in the app frame; a Reload screen instead of a blank page when a page fails to load. Old styles, the v3 compatibility rule and lucide-react are gone. 159 frontend tests, 180 backend tests.
+
+First load (gzipped): login 115.2 kB, Home 199.7 kB, project page 251.4 kB (+33.1 kB animation after), calendar 267.5 kB, settings 192.6 kB. The calendar is mostly react-big-calendar.
+
+Not done in phase 3: a dark mode toggle (dark follows the system), reordering cards inside a column (needs a saved position on tasks), editing a single repeat of busy time.
+
 **Order after your dashboard feedback:** login/register, project detail (kanban, task panel, activity, files, workload), calendar, notifications, settings, invite pages, command menu.
 
 ---
