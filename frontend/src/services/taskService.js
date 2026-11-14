@@ -45,9 +45,9 @@ export const taskService = {
     return response.data;
   },
 
-  // Calculate schedule (deadline algorithm!)
-  calculateSchedule: async (projectId) => {
-    const response = await api.post(`/deadline/projects/${projectId}/calculate-schedule`);
+  // Run the deadline scheduling algorithm. Work hours are in the user's timezone.
+  calculateSchedule: async (projectId, timezone) => {
+    const response = await api.post(`/projects/${projectId}/schedule`, { timezone });
     return response.data;
   },
 };

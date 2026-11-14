@@ -31,15 +31,31 @@ export const projectService = {
     return response.data;
   },
 
-  // Add member to project
-  addMember: async (projectId, userData) => {
-    const response = await api.post(`/projects/${projectId}/members`, userData);
+  // Remove member from project
+  removeMember: async (projectId, memberId) => {
+    await api.delete(`/projects/${projectId}/members/${memberId}`);
+  },
+
+  // This week's hours per member
+  getWorkload: async (projectId) => {
+    const response = await api.get(`/projects/${projectId}/workload`);
     return response.data;
   },
 
-  // Remove member from project
-  removeMember: async (projectId, userId) => {
-    const response = await api.delete(`/projects/${projectId}/members/${userId}`);
+  // Activity feed, newest first. Pass the previous page's next_cursor as `before`.
+  getActivity: async (projectId, before) => {
+    const response = await api.get(`/projects/${projectId}/activity`, { params: { before } });
     return response.data;
   },
+
+  // Finishing a project
+  complete: async (projectId) => (await api.post(`/projects/${projectId}/complete`)).data,
+  reopen: async (projectId) => (await api.post(`/projects/${projectId}/reopen`)).data,
+  setLocked: async (projectId, locked) => (await api.put(`/projects/${projectId}/lock`, { locked })).data,
+  setArchived: async (projectId, archived) => (await api.put(`/projects/${projectId}/archive`, { archived })).data,
+  sendFinalNote: async (projectId, message) => (await api.post(`/projects/${projectId}/final-note`, { message })).data,
+  getSummary: async (projectId) => (await api.get(`/projects/${projectId}/summary`)).data,
+
+  // My own settings on one project (email me big updates)
+  updateMySettings: async (projectId, settings) => (await api.put(`/projects/${projectId}/my-settings`, settings)).data,
 };

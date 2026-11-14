@@ -7,7 +7,7 @@
 4. tasks - Tasks within projects
 5. calendar_blocks - User busy times
 6. activities - Activity feed
-7. files - Google Drive links
+7. files - uploaded attachments on projects and tasks
 8. notifications - User notifications
 9. comments - Task/project comments
 

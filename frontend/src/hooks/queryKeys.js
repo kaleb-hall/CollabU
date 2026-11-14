@@ -1,0 +1,21 @@
+// Every React Query key lives here so invalidation always matches.
+export const queryKeys = {
+  projects: ['projects'],
+  project: (id) => ['projects', Number(id)],
+  projectTasks: (projectId) => ['tasks', 'project', Number(projectId)],
+  myTasks: ['tasks', 'mine'],
+  calendarBlocks: ['calendar', 'blocks'],
+  calendarRange: (start, end) => ['calendar', 'blocks', start.toISOString(), end.toISOString()],
+  files: (projectId) => ['files', Number(projectId)],
+  taskFiles: (projectId, taskId) => ['files', Number(projectId), Number(taskId)],
+  workload: (projectId) => ['workload', Number(projectId)],
+  me: ['me'],
+  activity: (projectId) => ['activity', Number(projectId)],
+  summary: (projectId) => ['summary', Number(projectId)],
+  notifications: ['notifications'],
+  unreadCount: ['notifications', 'unread'],
+  notificationList: ['notifications', 'list'],
+  invite: (token) => ['invite', token],
+  projectInvites: (projectId) => ['invites', Number(projectId)],
+  comments: (taskId) => ['comments', Number(taskId)],
+}

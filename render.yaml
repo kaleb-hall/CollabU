@@ -1,11 +1,22 @@
+# Render Blueprint for the API and its database. See DEPLOY.md for the steps.
 services:
   - type: web
     name: collabu-api
     runtime: python
+    plan: free
     rootDir: backend
     buildCommand: "./build.sh"
-    startCommand: "gunicorn run:app --bind 0.0.0.0:$PORT"
+    # One process with threads: the login rate limits are kept in memory, so they
+    # stay exact with a single process. Raise --workers only with RATELIMIT_STORAGE_URI=redis://...
+    startCommand: "gunicorn run:app --workers 1 --threads 8 --timeout 60 --bind 0.0.0.0:$PORT"
+    healthCheckPath: /api/health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.12"
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: run.py
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
@@ -14,10 +25,25 @@ services:
         fromDatabase:
           name: collabu-db
           property: connectionString
-      - key: FLASK_ENV
-        value: production
-      - key: PYTHON_VERSION
-        value: "3.11.0"
+      # Set these yourself in the Render dashboard (see DEPLOY.md)
+      - key: FRONTEND_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: DIGEST_TOKEN
+        sync: false
 
 databases:
   - name: collabu-db

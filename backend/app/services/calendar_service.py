@@ -1,163 +1,90 @@
-from app import db
-from app.models.calendar_block import CalendarBlock
-from datetime import datetime, timedelta
+from datetime import timedelta
+from zoneinfo import ZoneInfo
 
-class CalendarService:
-    
-    @staticmethod
-    def create_calendar_block(data, user_id):
-        """
-        Create a new calendar block
-        Returns: (block, error)
-        """
-        try:
-            block = CalendarBlock(
-                user_id=user_id,
-                start_time=data['start_time'],
-                end_time=data['end_time'],
-                title=data['title'],
-                description=data.get('description'),
-                block_type=data.get('block_type', 'busy'),
-                is_recurring=data.get('is_recurring', False),
-                recurrence_pattern=data.get('recurrence_pattern')
-            )
-            
-            db.session.add(block)
-            db.session.commit()
-            return block, None
-            
-        except Exception as e:
-            db.session.rollback()
-            return None, {'message': 'Error creating calendar block', 'details': str(e)}
-    
-    @staticmethod
-    def get_user_calendar_blocks(user_id, start_date=None, end_date=None):
-        """
-        Get all calendar blocks for a user
-        Optional: Filter by date range
-        Returns: list of blocks
-        """
-        query = CalendarBlock.query.filter_by(user_id=user_id)
-        
-        if start_date:
-            query = query.filter(CalendarBlock.end_time >= start_date)
-        if end_date:
-            query = query.filter(CalendarBlock.start_time <= end_date)
-        
-        blocks = query.order_by(CalendarBlock.start_time.asc()).all()
-        return blocks
-    
-    @staticmethod
-    def get_calendar_block_by_id(block_id, user_id):
-        """
-        Get specific calendar block (only if owned by user)
-        Returns: (block, error)
-        """
-        block = CalendarBlock.query.get(block_id)
-        
-        if not block:
-            return None, {'message': 'Calendar block not found', 'code': 'NOT_FOUND'}
-        
-        if block.user_id != user_id:
-            return None, {'message': 'Access denied', 'code': 'FORBIDDEN'}
-        
-        return block, None
-    
-    @staticmethod
-    def update_calendar_block(block_id, data, user_id):
-        """
-        Update a calendar block
-        Returns: (block, error)
-        """
-        block = CalendarBlock.query.get(block_id)
-        
-        if not block:
-            return None, {'message': 'Calendar block not found', 'code': 'NOT_FOUND'}
-        
-        if block.user_id != user_id:
-            return None, {'message': 'Access denied', 'code': 'FORBIDDEN'}
-        
-        try:
-            # Update fields
-            if 'start_time' in data:
-                block.start_time = data['start_time']
-            if 'end_time' in data:
-                block.end_time = data['end_time']
-            if 'title' in data:
-                block.title = data['title']
-            if 'description' in data:
-                block.description = data['description']
-            if 'block_type' in data:
-                block.block_type = data['block_type']
-            if 'is_recurring' in data:
-                block.is_recurring = data['is_recurring']
-            if 'recurrence_pattern' in data:
-                block.recurrence_pattern = data['recurrence_pattern']
-            
-            block.updated_at = datetime.utcnow()
-            
-            db.session.commit()
-            return block, None
-            
-        except Exception as e:
-            db.session.rollback()
-            return None, {'message': 'Error updating calendar block', 'details': str(e)}
-    
-    @staticmethod
-    def delete_calendar_block(block_id, user_id):
-        """
-        Delete a calendar block
-        Returns: (success, error)
-        """
-        block = CalendarBlock.query.get(block_id)
-        
-        if not block:
-            return False, {'message': 'Calendar block not found', 'code': 'NOT_FOUND'}
-        
-        if block.user_id != user_id:
-            return False, {'message': 'Access denied', 'code': 'FORBIDDEN'}
-        
-        try:
-            db.session.delete(block)
-            db.session.commit()
-            return True, None
-            
-        except Exception as e:
-            db.session.rollback()
-            return False, {'message': 'Error deleting calendar block', 'details': str(e)}
-    
-    @staticmethod
-    def calculate_available_hours(user_id, start_date, end_date):
-        """
-        Calculate available hours for a user in a date range
-        Returns: dictionary with availability info
-        """
-        # Get all blocks in range
-        blocks = CalendarService.get_user_calendar_blocks(user_id, start_date, end_date)
-        
-        # Calculate total days
-        total_days = (end_date - start_date).days
-        
-        # Assume 8 working hours per day
-        WORK_HOURS_PER_DAY = 8
-        max_hours = total_days * WORK_HOURS_PER_DAY
-        
-        # Calculate blocked hours
-        blocked_hours = 0
-        for block in blocks:
-            # Calculate duration in hours
-            duration = (block.end_time - block.start_time).total_seconds() / 3600
-            blocked_hours += duration
-        
-        available_hours = max(0, max_hours - blocked_hours)
-        
-        return {
-            'user_id': user_id,
-            'start_date': start_date.isoformat(),
-            'end_date': end_date.isoformat(),
-            'total_days': total_days,
-            'max_possible_hours': max_hours,
-            'blocked_hours': blocked_hours,
-            'available_hours': available_hours,
-            'availability_percentage': (available_hours / max_hours * 100) if max_hours > 0 else 0
-        }
+from app import db
+from app.errors import NotFound, ValidationFailed
+from app.models import CalendarBlock, User
+from app.services.recurrence import WEEKDAYS, expand
+
+OVERLAP_CHECK_WINDOW = timedelta(days=28)
+
+
+def user_timezone(user_id):
+    return ZoneInfo(db.session.get(User, user_id).timezone)
+
+
+def blocks_touching(user_ids, start, end):
+    """Blocks that may have an occurrence in the range, including repeats that started earlier."""
+    return CalendarBlock.query.filter(
+        CalendarBlock.user_id.in_(user_ids),
+        CalendarBlock.start_time < end,
+        db.or_(CalendarBlock.end_time > start, CalendarBlock.repeat_until >= start.date()),
+    ).all()
+
+
+def occurrences(user_id, start, end):
+    tz = user_timezone(user_id)
+    slots = [
+        {'block': block, 'start': slot_start, 'end': slot_end}
+        for block in blocks_touching([user_id], start, end)
+        for slot_start, slot_end in expand(block, tz, start, end)
+    ]
+    return sorted(slots, key=lambda slot: slot['start'])
+
+
+def get_block(block_id, user_id):
+    block = CalendarBlock.query.filter_by(id=block_id, user_id=user_id).first()
+    if not block:
+        raise NotFound('Calendar block not found')
+    return block
+
+
+def check_repeat(block):
+    days, until = block.repeat_days, block.repeat_until
+    if bool(days) != bool(until):
+        raise ValidationFailed(details={'repeat_days': ['Pick the days and the end date together']})
+    if until and until < block.start_time.date() - timedelta(days=1):
+        raise ValidationFailed(details={'repeat_until': ['The end date must be after the first one']})
+    if days and len(set(days)) != len(days):
+        raise ValidationFailed(details={'repeat_days': ['Each day can only be picked once']})
+    if days:
+        block.repeat_days = sorted(days, key=WEEKDAYS.index)
+
+
+def overlap_warnings(block):
+    """Titles of my other blocks that collide with this one in the next four weeks."""
+    tz = user_timezone(block.user_id)
+    start = block.start_time
+    end = start + OVERLAP_CHECK_WINDOW if block.is_recurring else block.end_time
+    mine = expand(block, tz, start, end)
+    warnings = []
+    for other in blocks_touching([block.user_id], start, end):
+        if other.id == block.id:
+            continue
+        theirs = expand(other, tz, start, end)
+        if any(a < d and c < b for a, b in mine for c, d in theirs):
+            warnings.append(f'Overlaps with "{other.title}"')
+    return warnings
+
+
+def create_block(user_id, data):
+    block = CalendarBlock(user_id=user_id, **data)
+    check_repeat(block)
+    db.session.add(block)
+    db.session.commit()
+    return block
+
+
+def update_block(block, data):
+    for key, value in data.items():
+        setattr(block, key, value)
+    if block.end_time <= block.start_time:
+        raise ValidationFailed(details={'end_time': ['End time must be after start time']})
+    check_repeat(block)
+    db.session.commit()
+    return block
+
+
+def delete_block(block):
+    db.session.delete(block)
+    db.session.commit()

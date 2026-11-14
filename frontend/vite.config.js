@@ -1,7 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+
+// Tests run in a fixed, non-UTC timezone so date bugs show up.
+process.env.TZ = 'America/Los_Angeles'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    restoreMocks: true,
+  },
 })

@@ -1,57 +1,66 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-import os
+from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 
-def create_app():
+
+def create_app(config_name=None):
+    from app.cli import register_commands
+    from app.config import load_config
+    from app.errors import register_error_handlers
+    from app.security import init_security
+    from app.services.email_sender import init_email
+    from app.services.storage import init_storage
+
     app = Flask(__name__)
-    
-    # Configuration
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-    
-    # Database URL (Render provides postgres://, SQLAlchemy needs postgresql://)
-    database_url = os.environ.get('DATABASE_URL', 'sqlite:///collabu_dev.db')
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
-    
-    # Initialize extensions
+    app.config.update(load_config(config_name))
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    
-    # Configure CORS — allow frontend origins from env or default to localhost
-    allowed_origins = os.environ.get(
-        'CORS_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173'
-    ).split(',')
-    CORS(app, 
-         origins=allowed_origins,
-         supports_credentials=True,
-         allow_headers=['Content-Type', 'Authorization'],
+    CORS(app, origins=app.config['CORS_ORIGINS'], allow_headers=['Content-Type', 'Authorization'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
-    
-    # Import and register blueprints
+    init_security(app)
+    register_error_handlers(app, jwt)
+    register_blueprints(app)
+    register_commands(app)
+    init_email(app)
+    init_storage(app)
+    return app
+
+
+def register_blueprints(app):
     from app.controllers.auth_controller import auth_bp
-    from app.controllers.user_controller import user_bp
+    from app.controllers.calendar_controller import calendar_bp
+    from app.controllers.comment_controller import comment_bp
+    from app.controllers.digest_controller import digest_bp
+    from app.controllers.file_controller import file_bp
+    from app.controllers.invite_controller import invite_bp
+    from app.controllers.notification_controller import notification_bp
     from app.controllers.project_controller import project_bp
     from app.controllers.task_controller import task_bp
-    from app.controllers.calendar_controller import calendar_bp
-    
+    from app.controllers.user_controller import user_bp
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(project_bp, url_prefix='/api/projects')
     app.register_blueprint(task_bp, url_prefix='/api/tasks')
+    app.register_blueprint(comment_bp, url_prefix='/api/tasks')
     app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
-    
-    return app
+    app.register_blueprint(notification_bp, url_prefix='/api/notifications')
+    app.register_blueprint(invite_bp, url_prefix='/api')
+    app.register_blueprint(file_bp, url_prefix='/api')
+    app.register_blueprint(digest_bp, url_prefix='/api')
 
-from app import models
+    @app.get('/api/health')
+    def health():
+        """For Render's health check and for waking the free server up."""
+        return {'status': 'ok'}
+
+
+from app import models  # noqa: E402,F401

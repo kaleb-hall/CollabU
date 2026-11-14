@@ -1,82 +1,165 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+/* Tailwind names for the tokens: bg-paper, text-ink, border-line, font-display, shadow-card ... */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-rule: var(--rule);
+  --color-margin: var(--margin);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-status-todo: var(--status-todo);
+  --color-status-progress: var(--status-progress);
+  --color-status-review: var(--status-review);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-done: var(--status-done);
+  --color-focus: var(--focus);
+  --color-scrim: var(--scrim);
+
+  --font-display: "Young Serif", Georgia, serif;
+  --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --shadow-card: var(--elev-card);
+  --shadow-lift: var(--elev-lift);
+  --radius-card: 0.375rem;
+
+  /* The checkbox gives a small pop when a task is checked off */
+  --animate-tick: tick 200ms ease-out;
+  @keyframes tick {
+    0% { transform: scale(0.8); }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+}
 
 @layer base {
+  /* Tailwind v4 dropped the pointer cursor on buttons; keep it */
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    background: var(--paper);
+  }
+  /* 14px body text, like Jira and Google Workspace: dense enough to scan, still easy to read */
   body {
-    @apply bg-gradient-to-br from-blue-50 via-blue-100 to-teal-50 min-h-screen;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One visible focus ring for every interactive element */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md;
+/* Notebook rule lines, for the few places that should feel like paper (due lists, calendar) */
+@utility ruled {
+  --rule-gap: 2.25rem;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--rule-gap) - 1px),
+    var(--rule) calc(var(--rule-gap) - 1px),
+    var(--rule) var(--rule-gap)
+  );
+}
+
+/*
+  The calendar (react-big-calendar) in our tokens: mono times, notebook rules on the
+  time grid, tasks as cards with a project color edge, busy time hatched like blocked-off paper.
+*/
+/* Not in a layer: react-big-calendar's own CSS is unlayered, and layered rules always lose to it */
+  .collabu-calendar .rbc-calendar { font-family: var(--font-sans); color: var(--ink); }
+  .collabu-calendar .rbc-month-view,
+  .collabu-calendar .rbc-time-view,
+  .collabu-calendar .rbc-agenda-view { border: 0; }
+  .collabu-calendar .rbc-header {
+    padding: 0.5rem 0.25rem;
+    border-color: var(--line);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
   }
-  
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  .collabu-calendar .rbc-time-header-content,
+  .collabu-calendar .rbc-time-content,
+  .collabu-calendar .rbc-time-content > * + * > *,
+  .collabu-calendar .rbc-day-bg + .rbc-day-bg,
+  .collabu-calendar .rbc-month-row + .rbc-month-row,
+  .collabu-calendar .rbc-header + .rbc-header,
+  .collabu-calendar .rbc-agenda-view table.rbc-agenda-table,
+  .collabu-calendar .rbc-agenda-view table.rbc-agenda-table tbody > tr > td + td,
+  .collabu-calendar .rbc-agenda-view table.rbc-agenda-table tbody > tr + tr { border-color: var(--line); }
+  .collabu-calendar .rbc-time-content { border-top-color: var(--line); }
+
+  /* Notebook rules: a line on the hour, a fainter one on the half hour */
+  .collabu-calendar .rbc-timeslot-group { border-bottom: 1px solid var(--rule); min-height: 3rem; }
+  .collabu-calendar .rbc-day-slot .rbc-time-slot { border-top: 1px dotted color-mix(in srgb, var(--rule) 70%, transparent); }
+  .collabu-calendar .rbc-time-gutter .rbc-time-slot { border: 0; }
+  .collabu-calendar .rbc-time-gutter .rbc-label {
+    padding: 0 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ink-faint);
   }
-  
-  .card {
-    @apply bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-200;
+  .collabu-calendar .rbc-today { background: color-mix(in srgb, var(--status-review) 7%, transparent); }
+  .collabu-calendar .rbc-off-range-bg { background: var(--paper-deep); }
+  .collabu-calendar .rbc-off-range { color: var(--ink-faint); }
+  .collabu-calendar .rbc-date-cell { padding: 0.25rem 0.5rem; font-family: var(--font-mono); font-size: 0.75rem; }
+  .collabu-calendar .rbc-current-time-indicator { background: var(--accent); height: 2px; }
+  .collabu-calendar .rbc-slot-selection { background: color-mix(in srgb, var(--focus) 20%, transparent); color: var(--ink); }
+  .collabu-calendar .rbc-show-more { color: var(--ink-soft); font-weight: 600; background: transparent; }
+
+  .collabu-calendar .rbc-event,
+  .collabu-calendar .rbc-day-slot .rbc-background-event {
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+    outline-offset: 1px;
   }
-  
-  .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all;
+  .collabu-calendar .rbc-event.cal-task {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--event-color);
+    box-shadow: var(--elev-card);
   }
-}
+  .collabu-calendar .rbc-event.cal-block {
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    background: repeating-linear-gradient(-45deg, var(--paper-deep) 0 6px, var(--paper) 6px 12px);
+  }
+  .collabu-calendar .rbc-event.rbc-selected { outline: 2px solid var(--focus); }
+  .collabu-calendar .rbc-event-label { font-family: var(--font-mono); font-size: 0.65rem; opacity: 0.8; }
+  .collabu-calendar .rbc-agenda-date-cell,
+  .collabu-calendar .rbc-agenda-time-cell { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); }
+  .collabu-calendar .rbc-agenda-view table.rbc-agenda-table thead > tr > th { border-color: var(--line); color: var(--ink-soft); }
 
-/* React Big Calendar Custom Styles */
-.rbc-calendar {
-  font-family: inherit;
-}
-
-.rbc-header {
-  padding: 10px 3px;
-  font-weight: 600;
-  font-size: 14px;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.rbc-today {
-  background-color: #dbeafe;
-}
-
-.rbc-event {
-  padding: 2px 5px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-.rbc-event.rbc-selected {
-  background-color: #1e40af;
-}
-
-.rbc-toolbar button {
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  color: #374151;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.rbc-toolbar button:hover {
-  background-color: #f3f4f6;
-}
-
-.rbc-toolbar button.rbc-active {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.rbc-month-view,
-.rbc-time-view,
-.rbc-agenda-view {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-}
+  .cal-key { display: inline-block; width: 0.875rem; height: 0.625rem; border-radius: 2px; border: 1px solid var(--line); }
+  .cal-key-task { background: var(--card); border-left: 3px solid var(--dot-1); }
+  .cal-key-block { background: repeating-linear-gradient(-45deg, var(--paper-deep) 0 3px, var(--paper) 3px 6px); }

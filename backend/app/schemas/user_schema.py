@@ -1,40 +1,63 @@
-from marshmallow import Schema, fields, validate, validates, ValidationError
 import re
 
+from marshmallow import EXCLUDE, Schema, ValidationError, fields, validate
+
+from app.schemas.fields import UtcDateTime
+
+
 class UserSchema(Schema):
-    """Schema for user output"""
     id = fields.Int(dump_only=True)
-    email = fields.Email(required=True)
-    first_name = fields.Str(required=True)
-    last_name = fields.Str(required=True)
-    bio = fields.Str(allow_none=True)
-    avatar_url = fields.Str(allow_none=True)
-    created_at = fields.DateTime(dump_only=True)
-    updated_at = fields.DateTime(dump_only=True)
+    email = fields.Email(dump_only=True)
+    first_name = fields.Str(dump_only=True)
+    last_name = fields.Str(dump_only=True)
+    full_name = fields.Method('get_full_name', dump_only=True)
+    created_at = UtcDateTime(dump_only=True)
+
+    def get_full_name(self, user):
+        return f'{user.first_name} {user.last_name}'
+
+
+class MeSchema(UserSchema):
+    """The logged-in user's own profile, including private settings."""
+    email_notifications = fields.Bool(dump_only=True)
+    timezone = fields.Str(dump_only=True)
+
+
+def check_password_strength(value):
+    if len(value) < 8:
+        raise ValidationError('Password must be at least 8 characters')
+    if not re.search(r'[A-Z]', value):
+        raise ValidationError('Password must contain at least one uppercase letter')
+    if not re.search(r'[0-9]', value):
+        raise ValidationError('Password must contain at least one number')
+
 
 class UserRegisterSchema(Schema):
-    """Schema for user registration"""
+    class Meta:
+        unknown = EXCLUDE
+
     email = fields.Email(required=True)
-    password = fields.Str(required=True, validate=validate.Length(min=8))
-    first_name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
-    last_name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
-    
-    @validates('password')
-    def validate_password(self, value):
-        """Validate password strength"""
-        if not re.search(r'[A-Z]', value):
-            raise ValidationError('Password must contain at least one uppercase letter')
-        if not re.search(r'[0-9]', value):
-            raise ValidationError('Password must contain at least one number')
+    password = fields.Str(required=True, validate=[validate.Length(max=128), check_password_strength])
+    first_name = fields.Str(required=True, validate=validate.Length(min=1, max=50))
+    last_name = fields.Str(required=True, validate=validate.Length(min=1, max=50))
+    timezone = fields.Str(load_default=None)
+
 
 class UserLoginSchema(Schema):
-    """Schema for user login"""
+    class Meta:
+        unknown = EXCLUDE
+
     email = fields.Email(required=True)
     password = fields.Str(required=True)
+    timezone = fields.Str(load_default=None)
+
 
 class UserUpdateSchema(Schema):
-    """Schema for updating user profile"""
-    first_name = fields.Str(validate=validate.Length(min=1, max=100))
-    last_name = fields.Str(validate=validate.Length(min=1, max=100))
-    bio = fields.Str(allow_none=True)
-    avatar_url = fields.Str(allow_none=True)
+    first_name = fields.Str(validate=validate.Length(min=1, max=50))
+    last_name = fields.Str(validate=validate.Length(min=1, max=50))
+    email_notifications = fields.Bool()
+
+
+class PasswordChangeSchema(Schema):
+    current_password = fields.Str(required=True)
+    new_password = fields.Str(required=True, validate=[validate.Length(max=128), check_password_strength])

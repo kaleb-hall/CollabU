@@ -1,84 +1,67 @@
-from marshmallow import Schema, fields, validate, validates_schema, ValidationError
-from datetime import datetime
+from marshmallow import Schema, ValidationError, fields, validate, validates_schema
+
+from app.schemas.fields import UtcDateTime
+from app.schemas.user_schema import UserSchema
+
+TASK_STATUSES = ['todo', 'in_progress', 'review', 'blocked', 'completed']
+STATUS_LABELS = {
+    'todo': 'To Do', 'in_progress': 'In Progress', 'review': 'Review', 'blocked': 'Blocked', 'completed': 'Completed',
+}
+TASK_PRIORITIES = ['low', 'medium', 'high', 'urgent']
+
 
 class TaskSchema(Schema):
-    """Schema for task output"""
     id = fields.Int(dump_only=True)
-    project_id = fields.Int(required=True)
-    title = fields.Str(required=True)
-    description = fields.Str(allow_none=True)
-    start_date = fields.DateTime(allow_none=True)
-    due_date = fields.DateTime(required=True)
-    estimated_hours = fields.Float(allow_none=True)
+    project_id = fields.Int(dump_only=True)
+    title = fields.Str(dump_only=True)
+    description = fields.Str(dump_only=True)
+    start_date = UtcDateTime(dump_only=True)
+    due_date = UtcDateTime(dump_only=True)
+    estimated_hours = fields.Float(dump_only=True)
     priority = fields.Str(dump_only=True)
     status = fields.Str(dump_only=True)
-    assigned_to = fields.Int(allow_none=True)
-    assignee = fields.Nested('UserSchema', dump_only=True, exclude=('bio', 'avatar_url'))
-    completed_at = fields.DateTime(dump_only=True)
-    created_at = fields.DateTime(dump_only=True)
-    updated_at = fields.DateTime(dump_only=True)
+    assigned_to = fields.Int(dump_only=True)
+    assignee = fields.Nested(UserSchema, dump_only=True)
+    completed_at = UtcDateTime(dump_only=True)
+    created_at = UtcDateTime(dump_only=True)
+    updated_at = UtcDateTime(dump_only=True)
 
-class TaskCreateSchema(Schema):
-    """Schema for creating a task"""
-    title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
-    description = fields.Str(allow_none=True)
-    due_date = fields.DateTime(required=True)
-    start_date = fields.DateTime(allow_none=True)
-    estimated_hours = fields.Float(allow_none=True, validate=validate.Range(min=0.5, max=100))
-    priority = fields.Str(validate=validate.OneOf(['low', 'medium', 'high', 'urgent']), missing='medium')
-    assigned_to = fields.Int(allow_none=True)
-    
-    @validates_schema
-    def validate_dates(self, data, **kwargs):
-        """Ensure dates make sense"""
-        # Make dates timezone-naive for comparison
-        start_date = data.get('start_date')
-        due_date = data.get('due_date')
-        
-        if start_date and start_date.tzinfo is not None:
-            start_date = start_date.replace(tzinfo=None)
-        if due_date and due_date.tzinfo is not None:
-            due_date = due_date.replace(tzinfo=None)
-        
-        if start_date and due_date:
-            if start_date >= due_date:
-                raise ValidationError('Start date must be before due date', 'start_date')
-        
-        # Don't validate if due date is in future - allow any date for flexibility
-        # if due_date and due_date < datetime.utcnow():
-        #     raise ValidationError('Due date must be in the future', 'due_date')
 
-class TaskUpdateSchema(Schema):
-    """Schema for updating a task"""
+class MyTaskSchema(TaskSchema):
+    """A task plus the title of its project, for lists that mix projects."""
+    project = fields.Nested('ProjectSummarySchema', dump_only=True)
+
+
+class ProjectSummarySchema(Schema):
+    id = fields.Int(dump_only=True)
+    title = fields.Str(dump_only=True)
+
+
+class TaskInputSchema(Schema):
     title = fields.Str(validate=validate.Length(min=1, max=200))
     description = fields.Str(allow_none=True)
-    due_date = fields.DateTime()
-    start_date = fields.DateTime(allow_none=True)
-    estimated_hours = fields.Float(allow_none=True, validate=validate.Range(min=0.5, max=100))
-    priority = fields.Str(validate=validate.OneOf(['low', 'medium', 'high', 'urgent']))
-    status = fields.Str(validate=validate.OneOf(['todo', 'in_progress', 'review', 'completed', 'blocked']))
+    due_date = UtcDateTime()
+    start_date = UtcDateTime(allow_none=True)
+    estimated_hours = fields.Float(allow_none=True, validate=validate.Range(min=0.25, max=200))
+    priority = fields.Str(validate=validate.OneOf(TASK_PRIORITIES))
+    status = fields.Str(validate=validate.OneOf(TASK_STATUSES))
     assigned_to = fields.Int(allow_none=True)
-    
+
     @validates_schema
     def validate_dates(self, data, **kwargs):
-        """Ensure dates make sense"""
-        # Make dates timezone-naive for comparison
-        start_date = data.get('start_date')
-        due_date = data.get('due_date')
-        
-        if start_date and start_date.tzinfo is not None:
-            start_date = start_date.replace(tzinfo=None)
-        if due_date and due_date.tzinfo is not None:
-            due_date = due_date.replace(tzinfo=None)
-        
-        if start_date and due_date:
-            if start_date >= due_date:
-                raise ValidationError('Start date must be before due date', 'start_date')
+        start, due = data.get('start_date'), data.get('due_date')
+        if start and due and start >= due:
+            raise ValidationError('Start date must be before due date', 'start_date')
 
-class TaskAssignSchema(Schema):
-    """Schema for assigning a task"""
-    assigned_to = fields.Int(required=True)
+
+class TaskCreateSchema(TaskInputSchema):
+    title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
+    due_date = UtcDateTime(required=True)
+
+
+class TaskUpdateSchema(TaskInputSchema):
+    pass
+
 
 class TaskStatusUpdateSchema(Schema):
-    """Schema for updating task status"""
-    status = fields.Str(required=True, validate=validate.OneOf(['todo', 'in_progress', 'review', 'completed', 'blocked']))
+    status = fields.Str(required=True, validate=validate.OneOf(TASK_STATUSES))

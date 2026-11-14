@@ -42,7 +42,7 @@ Authenticate and receive a JWT token.
 }
 ```
 
-**Response:** `200 OK` — returns `access_token` and `user` object.
+**Response:** `200 OK`, returns `access_token`, `refresh_token` and the `user` object.
 
 ---
 

@@ -1,210 +1,165 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from marshmallow import ValidationError
-from app.services.project_service import ProjectService
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+
+from app.schemas.activity_schema import ActivitySchema
 from app.schemas.project_schema import (
-    ProjectSchema, 
-    ProjectCreateSchema, 
+    ArchiveSchema,
+    FinalNoteSchema,
+    LockSchema,
+    MemberSettingsSchema,
+    ProjectCreateSchema,
+    ProjectMemberSchema,
+    ProjectSchema,
+    CompletionSummarySchema,
     ProjectUpdateSchema,
-    AddMemberSchema
+    ScheduleRequestSchema,
+    TaskSummarySchema,
 )
+from app.models import Activity
+from app.services import activity_service, completion_service, deadline_service, project_service, task_templates, workload_service
+from app.utils.auth import current_user_id
+from app.utils.pagination import PageArgsSchema, paginate
+from app.utils.time import iso_utc
+from app.utils.permissions import project_access
+from app.utils.request_data import load_json
 
 project_bp = Blueprint('projects', __name__)
 
-# Initialize schemas
 project_schema = ProjectSchema()
 projects_schema = ProjectSchema(many=True)
-project_create_schema = ProjectCreateSchema()
-project_update_schema = ProjectUpdateSchema()
-add_member_schema = AddMemberSchema()
+summary_schema = TaskSummarySchema()
+
 
 @project_bp.route('', methods=['POST'])
 @jwt_required()
 def create_project():
-    """
-    Create a new project with optional AI task generation
-    POST /api/projects
-    Body: { 
-        "title": "...", 
-        "description": "...", 
-        "deadline": "2025-12-31T23:59:59",
-        "auto_generate_tasks": true  // Optional
-    }
-    """
-    current_user_id = int(get_jwt_identity())
-    
-    try:
-        data = project_create_schema.load(request.json)
-    except ValidationError as err:
-        return jsonify({'error': 'Validation error', 'details': err.messages}), 400
-    
-    auto_generate = request.json.get('auto_generate_tasks', False)
-    
-    project, task_suggestions, error = ProjectService.create_project(
-        data, 
-        current_user_id,
-        auto_generate_tasks=auto_generate
+    data = load_json(ProjectCreateSchema())
+    project, suggestions = project_service.create_project(
+        data, current_user_id(), data.pop('auto_generate_tasks'), data.pop('template')
     )
-    
-    if error:
-        return jsonify({'error': error['message']}), 500
-    
-    response = {
-        'message': 'Project created successfully',
-        'project': project_schema.dump(project)
-    }
-    
-    if task_suggestions:
-        response['ai_suggestions'] = {
-            'project_type': task_suggestions['project_type'],
-            'detected': task_suggestions['detected'],
-            'tasks_created': len(task_suggestions['tasks']),
-            'total_estimated_hours': task_suggestions['total_estimated_hours'],
-            'warnings': task_suggestions.get('warnings', [])
+
+    response = {'project': project_schema.dump(project)}
+    if suggestions:
+        response['suggestions'] = {
+            'project_type': suggestions['project_type'],
+            'detected': suggestions['detected'],
+            'tasks_created': len(suggestions['tasks']),
+            'total_estimated_hours': suggestions['total_estimated_hours'],
+            'warnings': suggestions['warnings'],
         }
-    
     return jsonify(response), 201
 
-@project_bp.route('/<int:project_id>/task-suggestions', methods=['GET'])
-@jwt_required()
-def get_task_suggestions(project_id):
-    """
-    Get AI task suggestions for an existing project
-    GET /api/projects/<id>/task-suggestions
-    """
-    current_user_id = int(get_jwt_identity())
-    
-    suggestions, error = ProjectService.get_task_suggestions(project_id, current_user_id)
-    
-    if error:
-        status_code = 404 if error.get('code') == 'NOT_FOUND' else 403
-        return jsonify({'error': error['message']}), status_code
-    
-    return jsonify(suggestions), 200
 
 @project_bp.route('', methods=['GET'])
 @jwt_required()
-def get_projects():
-    """
-    Get all projects for current user
-    GET /api/projects
-    """
-    current_user_id = int(get_jwt_identity())
-    projects = ProjectService.get_user_projects(current_user_id)
-    
-    return jsonify({
-        'projects': projects_schema.dump(projects)
-    }), 200
+def list_projects():
+    projects = project_service.projects_for_user(current_user_id())
+    summaries = project_service.task_summaries([project.id for project in projects])
+    return jsonify({'projects': [
+        {**project_schema.dump(project), **summary_schema.dump(summaries[project.id])} for project in projects
+    ]}), 200
+
 
 @project_bp.route('/<int:project_id>', methods=['GET'])
-@jwt_required()
-def get_project(project_id):
-    """
-    Get project details
-    GET /api/projects/<id>
-    """
-    current_user_id = int(get_jwt_identity())
-    project, error = ProjectService.get_project_by_id(project_id, current_user_id)
-    
-    if error:
-        status_code = 404 if error['code'] == 'NOT_FOUND' else 403
-        return jsonify({'error': error['message']}), status_code
-    
-    return jsonify({
-        'project': project_schema.dump(project)
-    }), 200
+@project_access()
+def get_project(project):
+    return jsonify({'project': project_schema.dump(project)}), 200
+
+
+@project_bp.route('/<int:project_id>/task-suggestions', methods=['GET'])
+@project_access()
+def get_task_suggestions(project):
+    return jsonify(task_templates.serialize(project_service.task_suggestions(project))), 200
+
 
 @project_bp.route('/<int:project_id>', methods=['PUT'])
-@jwt_required()
-def update_project(project_id):
-    """
-    Update a project
-    PUT /api/projects/<id>
-    Body: { "title": "...", "description": "...", "deadline": "...", "status": "..." }
-    """
-    current_user_id = int(get_jwt_identity())
-    
-    try:
-        data = project_update_schema.load(request.json)
-    except ValidationError as err:
-        return jsonify({'error': 'Validation error', 'details': err.messages}), 400
-    
-    project, error = ProjectService.update_project(project_id, data, current_user_id)
-    
-    if error:
-        status_code = 404 if error['code'] == 'NOT_FOUND' else 403
-        return jsonify({'error': error['message']}), status_code
-    
-    return jsonify({
-        'message': 'Project updated successfully',
-        'project': project_schema.dump(project)
-    }), 200
+@project_access(admin=True, editable=True)
+def update_project(project):
+    project = project_service.update_project(project, load_json(ProjectUpdateSchema()))
+    return jsonify({'project': project_schema.dump(project)}), 200
+
 
 @project_bp.route('/<int:project_id>', methods=['DELETE'])
-@jwt_required()
-def delete_project(project_id):
-    """
-    Delete a project
-    DELETE /api/projects/<id>
-    """
-    current_user_id = int(get_jwt_identity())
-    success, error = ProjectService.delete_project(project_id, current_user_id)
-    
-    if error:
-        status_code = 404 if error['code'] == 'NOT_FOUND' else 403
-        return jsonify({'error': error['message']}), status_code
-    
-    return jsonify({
-        'message': 'Project deleted successfully'
-    }), 200
+@project_access(admin=True)
+def delete_project(project):
+    project_service.delete_project(project)
+    return '', 204
 
-@project_bp.route('/<int:project_id>/members', methods=['POST'])
-@jwt_required()
-def add_member(project_id):
-    """
-    Add a member to a project
-    POST /api/projects/<id>/members
-    Body: { "user_id": 2, "role": "member" }
-    """
-    current_user_id = int(get_jwt_identity())
-    
-    try:
-        data = add_member_schema.load(request.json)
-    except ValidationError as err:
-        return jsonify({'error': 'Validation error', 'details': err.messages}), 400
-    
-    member, error = ProjectService.add_member(
-        project_id, 
-        current_user_id, 
-        data['user_id'], 
-        data.get('role', 'member')
-    )
-    
-    if error:
-        status_code = 404 if error['code'] in ['NOT_FOUND', 'USER_NOT_FOUND'] else 403
-        if error['code'] == 'ALREADY_MEMBER':
-            status_code = 409
-        return jsonify({'error': error['message']}), status_code
-    
-    return jsonify({
-        'message': 'Member added successfully',
-        'member': member.to_dict()
-    }), 201
 
 @project_bp.route('/<int:project_id>/members/<int:member_id>', methods=['DELETE'])
-@jwt_required()
-def remove_member(project_id, member_id):
-    """
-    Remove a member from a project
-    DELETE /api/projects/<id>/members/<member_id>
-    """
-    current_user_id = int(get_jwt_identity())
-    success, error = ProjectService.remove_member(project_id, current_user_id, member_id)
-    
-    if error:
-        status_code = 404 if error['code'] == 'NOT_FOUND' else 403
-        return jsonify({'error': error['message']}), status_code
-    
-    return jsonify({
-        'message': 'Member removed successfully'
-    }), 200
+@project_access(admin=True, editable=True)
+def remove_member(project, member_id):
+    project_service.remove_member(project, member_id)
+    return '', 204
+
+
+@project_bp.route('/<int:project_id>/schedule', methods=['POST'])
+@project_access(editable=True)
+def calculate_schedule(project):
+    data = ScheduleRequestSchema().load(request.get_json(silent=True) or {})
+    schedule, warnings = deadline_service.calculate_task_schedule(project, data['timezone'])
+    return jsonify({'schedule': schedule, 'warnings': warnings}), 200
+
+
+@project_bp.route('/<int:project_id>/activity', methods=['GET'])
+@project_access()
+def list_activity(project):
+    args = PageArgsSchema().load(request.args)
+    activities, next_cursor = paginate(activity_service.feed_query(project), Activity, args)
+    return jsonify({'activities': ActivitySchema(many=True).dump(activities), 'next_cursor': next_cursor}), 200
+
+
+@project_bp.route('/<int:project_id>/workload', methods=['GET'])
+@project_access()
+def get_workload(project):
+    week_start, week_end, members = workload_service.project_workload(project, current_user_id())
+    return jsonify({'week_start': iso_utc(week_start), 'week_end': iso_utc(week_end), 'members': members}), 200
+
+
+@project_bp.route('/<int:project_id>/complete', methods=['POST'])
+@project_access()
+def complete_project(project):
+    project = completion_service.complete(project, current_user_id())
+    return jsonify({'project': project_schema.dump(project)}), 200
+
+
+@project_bp.route('/<int:project_id>/reopen', methods=['POST'])
+@project_access(admin=True)
+def reopen_project(project):
+    project = completion_service.reopen(project, current_user_id())
+    return jsonify({'project': project_schema.dump(project)}), 200
+
+
+@project_bp.route('/<int:project_id>/lock', methods=['PUT'])
+@project_access(admin=True)
+def lock_project(project):
+    project = completion_service.set_locked(project, load_json(LockSchema())['locked'])
+    return jsonify({'project': project_schema.dump(project)}), 200
+
+
+@project_bp.route('/<int:project_id>/archive', methods=['PUT'])
+@project_access(admin=True)
+def archive_project(project):
+    project = completion_service.set_archived(project, load_json(ArchiveSchema())['archived'])
+    return jsonify({'project': project_schema.dump(project)}), 200
+
+
+@project_bp.route('/<int:project_id>/final-note', methods=['POST'])
+@project_access()
+def send_final_note(project):
+    message = load_json(FinalNoteSchema())['message']
+    project = completion_service.send_final_note(project, current_user_id(), message)
+    return jsonify({'project': project_schema.dump(project)}), 200
+
+
+@project_bp.route('/<int:project_id>/summary', methods=['GET'])
+@project_access()
+def get_summary(project):
+    return jsonify(CompletionSummarySchema().dump(completion_service.summary(project))), 200
+
+
+@project_bp.route('/<int:project_id>/my-settings', methods=['PUT'])
+@project_access()
+def update_my_settings(project):
+    member = project_service.update_member_settings(project, current_user_id(), load_json(MemberSettingsSchema()))
+    return jsonify(ProjectMemberSchema().dump(member)), 200

@@ -25,6 +25,8 @@ class User(db.Model):
     # Account status
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    timezone = db.Column(db.String(64), default='UTC', server_default='UTC', nullable=False)
+    email_notifications = db.Column(db.Boolean, default=True, server_default=db.true(), nullable=False)
     
     def set_password(self, password):
         """Hash and set the user's password"""
@@ -34,21 +36,6 @@ class User(db.Model):
         """Check if provided password matches hash"""
         return check_password_hash(self.password_hash, password)
     
-    def to_dict(self):
-        """Convert user object to dictionary (for JSON responses)"""
-        return {
-            'id': self.id,
-            'email': self.email,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'full_name': f'{self.first_name} {self.last_name}',
-            'bio': self.bio,
-            'avatar_url': self.avatar_url,
-            'is_active': self.is_active,
-            'email_verified': self.email_verified,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-    
+
     def __repr__(self):
         return f'<User {self.email}>'

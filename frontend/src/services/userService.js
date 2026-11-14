@@ -1,27 +1,17 @@
 import api from './api';
 
 export const userService = {
-  // Search users
-  searchUsers: async (query) => {
-    const response = await api.get(`/users?search=${encodeURIComponent(query)}`);
+  me: async () => {
+    const response = await api.get('/auth/me');
     return response.data;
   },
 
-  // Get all users
-  getAllUsers: async () => {
-    const response = await api.get('/users');
+  updateProfile: async (changes) => {
+    const response = await api.put('/users/me', changes);
     return response.data;
   },
 
-  // Get user by ID
-  getUser: async (id) => {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
-  },
-
-  // Update current user
-  updateProfile: async (userData) => {
-    const response = await api.put('/users/me', userData);
-    return response.data;
+  changePassword: async (currentPassword, newPassword) => {
+    await api.put('/users/me/password', { current_password: currentPassword, new_password: newPassword });
   },
 };

@@ -1,76 +1,56 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.models import User
-from app.schemas.user_schema import UserSchema, UserRegisterSchema, UserLoginSchema
+from flask import Blueprint, jsonify
+from flask_jwt_extended import jwt_required
+
 from app import db
+from app.errors import NotFound, Unauthorized
+from app.models import User
+from app.security import limiter
+from app.schemas.user_schema import MeSchema, UserLoginSchema, UserRegisterSchema
+from app.services import auth_service
+from app.utils.auth import current_user_id
+from app.utils.request_data import load_json
 
 auth_bp = Blueprint('auth', __name__)
 
-user_schema = UserSchema()
-user_register_schema = UserRegisterSchema()
-user_login_schema = UserLoginSchema()
+user_schema = MeSchema()
+
+
+def auth_response(user, status):
+    return jsonify({
+        'user': user_schema.dump(user),
+        'access_token': auth_service.access_token_for(user),
+        'refresh_token': auth_service.refresh_token_for(user),
+    }), status
+
 
 @auth_bp.route('/register', methods=['POST'])
+@limiter.limit('5 per minute')
 def register():
-    """Register a new user"""
-    try:
-        data = user_register_schema.load(request.json)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-    
-    # Check if user already exists
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({'error': 'Email already registered'}), 400
-    
-    # Create new user
-    user = User(
-        email=data['email'],
-        first_name=data['first_name'],
-        last_name=data['last_name']
-    )
-    user.set_password(data['password'])
-    
-    db.session.add(user)
-    db.session.commit()
-    
-    # Create access token with user_id as STRING
-    access_token = create_access_token(identity=str(user.id))
-    
-    return jsonify({
-        'user': user_schema.dump(user),
-        'access_token': access_token
-    }), 201
+    user = auth_service.register_user(load_json(UserRegisterSchema()))
+    return auth_response(user, 201)
+
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
-    """Login user"""
-    try:
-        data = user_login_schema.load(request.json)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-    
-    # Find user
-    user = User.query.filter_by(email=data['email']).first()
-    
-    if not user or not user.check_password(data['password']):
-        return jsonify({'error': 'Invalid email or password'}), 401
-    
-    # Create access token with user_id as STRING
-    access_token = create_access_token(identity=str(user.id))
-    
-    return jsonify({
-        'user': user_schema.dump(user),
-        'access_token': access_token
-    }), 200
+    data = load_json(UserLoginSchema())
+    return auth_response(auth_service.authenticate(data['email'], data['password'], data['timezone']), 200)
+
+
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    """Trade the long-lived refresh token for a new short-lived access token."""
+    user = db.session.get(User, current_user_id())
+    if not user or not user.is_active:
+        raise Unauthorized('Please log in again')
+    return jsonify({'access_token': auth_service.access_token_for(user)}), 200
+
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
-def get_current_user():
-    """Get current user info"""
-    current_user_id = int(get_jwt_identity())  # Convert back to int
-    user = User.query.get(current_user_id)
-    
+def me():
+    user = db.session.get(User, current_user_id())
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        raise NotFound('User not found')
     return jsonify({'user': user_schema.dump(user)}), 200
