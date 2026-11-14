@@ -305,6 +305,45 @@ Not done in phase 3: a dark mode toggle (dark follows the system), reordering ca
 
 ---
 
+## Phase 3.5: finishing a project (your request on 2026-11-13)
+
+Already done: creating a project now opens it right away (commit `6078c19`).
+
+**How finishing works**
+- A "Complete project" button in the project header. The creator can press it at any time. Everyone else sees it once every task is done.
+- If the creator presses it with tasks still open, it asks first ("3 tasks are still open. Complete anyway?").
+- When the last task gets checked off, the project does not finish by itself. Instead a strip appears for everyone: "All tasks are done. Complete the project?" Finishing by itself would surprise people who were about to add one more task.
+- Completing sets the status to Completed and saves when and who. The creator or an admin can Reopen it.
+- I am skipping the "Pending review" approval step. For a student group it adds a second click and a waiting state for little gain. Easy to add later if a teacher needs to sign off.
+
+**Locked while completed**
+- A completed project is read only: no new or edited tasks, no moving cards, no uploads or deleting files, no invites. The backend refuses these with a clear message ("This project is completed. Reopen it to make changes.") and the page hides those buttons.
+- Comments and file downloads still work.
+- I suggest this replaces a separate "Lock" switch. Two switches (completed and locked) can disagree and confuse people. Completed simply means locked; Reopen unlocks it.
+
+**Archive**
+- The creator or an admin can archive any project. It leaves the sidebar and Home but still shows in search (marked Archived) and in an "Archived" list on Home. Unarchive brings it back.
+- Archive is its own flag, so a project can be completed and archived, or just completed.
+- The old unused status values (`archived`, `on_hold`) get folded into the new fields by the migration.
+
+**The moment it finishes**
+- A short animation: a circle draws itself, a check mark strokes in, and a ring of small ink marks bursts out once, in the accent color. About 1.2 seconds. With reduced motion it just shows the check.
+- Right after, a box: "Send the team a final note" (optional, skip is fine). It goes to every member as a notification, and by email to those who want email. The note is also shown on the summary.
+
+**The summary banner** (on the completed project page)
+- Time taken (created to completed), tasks completed with who did each one, who contributed and how many tasks each, and the attached files with download links, plus the final note.
+
+**Updates that matter (not every task)**
+- Notify the team when a member finishes all of their tasks in a project ("Leo finished all their tasks in History of Jazz").
+- Notify the team when the project is completed, and when the final note is sent.
+- Per project "Email me big updates" toggle for each member (on by default, and the existing global email switch in Settings still wins). Emails use the console locally like everything else.
+
+**Mobile notifications**: see question 14 below.
+
+**Order**: backend first with tests (fields and migration, complete/reopen/archive, the lock, the summary, the notifications), then the frontend (button, animation, final note, banner, read-only board, archive list, email toggle), then a browser check.
+
+---
+
 ## Phase 4: local dev + ready to publish
 
 **Local**
@@ -349,3 +388,8 @@ Later (I will ask again when we get there):
 11. Comments: only the author can delete, or project admins too?
 12. Accent color: tomato red only, or also highlighter yellow as a background mark?
 13. Upgrade to Tailwind v4 at the start of phase 3?
+
+Phase 3.5 (finishing a project):
+14. Phone notifications: real push notifications need Web Push (a service worker, keys stored on the server, and a permission prompt). It works on Android; on iPhone only after "Add to Home Screen". Do it now, or keep the in-app bell plus email for now (my suggestion)?
+15. Completion animation: build our own (my suggestion: no new library, matches the paper look, about 2 kB), or use the actual LottieFiles animation (adds the Lottie player, about 60 kB, and its own look)?
+16. Is "completed means locked" OK, instead of a separate Lock switch?
