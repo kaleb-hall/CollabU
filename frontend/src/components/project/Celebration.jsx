@@ -71,7 +71,8 @@ export default function Celebration({ project, stats, open, onClose }) {
                   <span className="font-semibold text-ink">{project.title}</span> is done.
                 </Dialog.Description>
                 <p className="mt-2 font-mono text-xs uppercase tracking-wide text-ink-faint">
-                  {stats.done} {stats.done === 1 ? 'task' : 'tasks'} done in {stats.took.toLowerCase()}
+                  {stats.done > 0 && `${stats.done} ${stats.done === 1 ? 'task' : 'tasks'} done in `}
+                  {stats.done > 0 ? stats.took.toLowerCase() : `Finished in ${stats.took.toLowerCase()}`}
                 </p>
               </MotionDiv>
               {noteReady && <FinalNote project={project} onDone={onClose} animate={!reduced} />}

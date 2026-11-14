@@ -70,9 +70,10 @@ function useProjectChange(projectId, change) {
     mutationFn: change,
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.project(projectId), data)
+      // An old summary (say, from before a reopen) would show the wrong dates, so drop it
+      queryClient.removeQueries({ queryKey: queryKeys.summary(projectId) })
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.summary(projectId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.activity(projectId) }),
       ])
     },

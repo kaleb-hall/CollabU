@@ -342,6 +342,8 @@ Already done: creating a project now opens it right away (commit `6078c19`).
 
 **Order**: backend first with tests (fields and migration, complete/reopen/archive, the lock, the summary, the notifications), then the frontend (button, animation, final note, banner, read-only board, archive list, email toggle), then a browser check.
 
+**Phase 3.5 results (done, branch `phase-3-design`):** Create opens the new project. Complete, Reopen, Lock/Unlock and Archive/Unarchive work as planned, with the backend refusing edits on locked projects (`PROJECT_LOCKED`). The celebration (stamp, check, ink rays, 36 pieces of confetti in six bright colors) is its own 2.6 kB chunk, loaded only when someone finishes a project; the final note box shows after it. Summary banner on completed projects; Archived list folded at the bottom of Projects on Home; archived projects marked in search. Per project "Email me big updates" in the project's ... menu. 199 backend tests, 175 frontend tests.
+
 ---
 
 ## Phase 4: local dev + ready to publish
