@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required
 from app import db
 from app.errors import NotFound
 from app.models import User
+from app.security import limiter
 from app.schemas.user_schema import MeSchema, UserLoginSchema, UserRegisterSchema
 from app.services import auth_service
 from app.utils.auth import current_user_id
@@ -19,12 +20,14 @@ def auth_response(user, status):
 
 
 @auth_bp.route('/register', methods=['POST'])
+@limiter.limit('5 per minute')
 def register():
     user = auth_service.register_user(load_json(UserRegisterSchema()))
     return auth_response(user, 201)
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     data = load_json(UserLoginSchema())
     return auth_response(auth_service.authenticate(data['email'], data['password'], data['timezone']), 200)

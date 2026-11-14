@@ -13,6 +13,7 @@ def create_app(config_name=None):
     from app.cli import register_commands
     from app.config import load_config
     from app.errors import register_error_handlers
+    from app.security import init_security
     from app.services.email_sender import init_email
     from app.services.storage import init_storage
 
@@ -24,6 +25,7 @@ def create_app(config_name=None):
     jwt.init_app(app)
     CORS(app, origins=app.config['CORS_ORIGINS'], allow_headers=['Content-Type', 'Authorization'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    init_security(app)
     register_error_handlers(app, jwt)
     register_blueprints(app)
     register_commands(app)
@@ -52,6 +54,11 @@ def register_blueprints(app):
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(invite_bp, url_prefix='/api')
     app.register_blueprint(file_bp, url_prefix='/api')
+
+    @app.get('/api/health')
+    def health():
+        """For Render's health check and for waking the free server up."""
+        return {'status': 'ok'}
 
 
 from app import models  # noqa: E402,F401

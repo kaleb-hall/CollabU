@@ -91,7 +91,8 @@ def register_error_handlers(app, jwt):
     @app.errorhandler(HTTPException)
     def handle_http_error(error):
         code = HTTP_CODES.get(error.code, 'HTTP_ERROR')
-        message = 'That upload is too big' if error.code == 413 else (error.description or code)
+        messages = {413: 'That upload is too big', 429: 'Too many tries. Please wait a minute and try again.'}
+        message = messages.get(error.code) or error.description or code
         return error_response(error.code, code, message)
 
     @app.errorhandler(Exception)
