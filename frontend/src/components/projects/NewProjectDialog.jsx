@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BookOpenText, Code, FilmSlate, Flask, FileText, PresentationChart, Square, UsersThree } from '@phosphor-icons/react';
 import Modal from '../ui/Modal';
@@ -26,6 +27,7 @@ export default function NewProjectDialog({ open, onOpenChange }) {
   const [template, setTemplate] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const createProject = useCreateProject();
+  const navigate = useNavigate();
 
   const close = () => {
     onOpenChange(false);
@@ -45,6 +47,7 @@ export default function NewProjectDialog({ open, onOpenChange }) {
       onSuccess: (data) => {
         toast.success(suggested ? `Project created with ${data.suggestions?.tasks_created ?? 0} suggested tasks` : 'Project created');
         close();
+        navigate(`/projects/${data.project.id}`);
       },
       onError: (error) => toast.error(getErrorMessage(error, 'Could not create the project')),
     });
