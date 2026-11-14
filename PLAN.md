@@ -366,9 +366,62 @@ Already done: creating a project now opens it right away (commit `6078c19`).
 
 ---
 
-## Final summary (after phase 4)
+**Phase 4 results (done, branch `phase-4-ship`, built on `phase-3-design`):** `npm run setup` and `npm run dev` at the repo root; explained `.env.example` files; `flask seed` (three demo people, two projects, tasks in every status, a weekly class, comments, notifications); gunicorn with one process and 8 threads, migrations in the Render build, `/api/health`; login and register rate limits; security headers on the API and on Vercel; production refuses to start without `FRONTEND_URL` and only allows that origin; 15 minute access tokens with 30 day refresh tokens; Resend email, Supabase Storage through the S3 protocol, and a daily digest GitHub Action; README and DEPLOY.md. Checked by starting gunicorn in production mode: headers present, CORS locked to the frontend, the 11th login in a minute gets 429. 222 backend tests, 179 frontend tests. Nothing was deployed.
 
-What changed, before/after bundle size and query counts, what I skipped, decisions to double check.
+Answers used: Resend for email, GitHub Actions for the digest, Supabase Storage for files.
+
+---
+
+## Final summary
+
+### What changed
+
+- **Phase 1, audit and speed.** Tests from zero, one JSON error format, a permission decorator instead of copy pasted checks, indexes and N+1 fixes, cursor paging, UTC everywhere with one time helper, a tested scheduler that keeps assignees and works around busy time, pages and dialogs loaded only when needed.
+- **Phase 2, features.** Notifications (polling), email (console locally), activity feed from the service layer, file attachments behind a small storage interface, invite by email, task comments, weekly repeating busy time that the scheduler respects, workload view, profile and settings.
+- **Phase 3, the look.** Warm paper and navy ink with one tomato accent and a chalkboard dark mode, all colors in `tokens.css`; a Google and Atlassian style app frame with sidebar, top bar search and Cmd/Ctrl+K; index card kanban with drag and drop (mouse, touch, keyboard); notebook ruled calendar; skeleton, empty and error states; phone layouts.
+- **Phase 3.5, finishing projects.** Create opens the project; Complete with a celebration and final note; summary banner; Lock and Archive; per project email updates.
+- **Phase 4, ready to ship.** See the results above.
+
+### Measurements
+
+Gzipped JavaScript and CSS needed to open each page, measured with the same script on each version (this counts CSS too, so the numbers are a little higher than the JavaScript-only figures in the phase 1 table):
+
+| Page | Before (`main`) | After phase 3 | Now |
+|---|---|---|---|
+| Login | 183.1 kB | 126.3 kB | 127.0 kB |
+| Home | 183.1 kB | 210.7 kB | 216.2 kB |
+| Project | 183.1 kB | 263.0 kB (+33.1 kB animation after) | 272.9 kB (+33.1 kB animation after) |
+| Calendar | 183.1 kB | 281.2 kB | 282.8 kB |
+| Settings | 183.1 kB | 203.6 kB | 204.9 kB |
+
+Honest reading: login is 31% lighter, but the other pages are heavier than the original single bundle, because the app now does far more (drag and drop, accessible menus and dialogs, notifications, comments, files, recurring calendar, three web fonts). The heaviest extras load only where needed: the board animation after the board appears, the celebration (2.6 kB) only when a project is finished, search (18.6 kB) on first use, and the calendar library only on the calendar.
+
+| Other measures | Before | Now |
+|---|---|---|
+| Backend tests | 0 | 222 |
+| Frontend tests | 0 | 179 |
+| Lint problems | 11 | 0 |
+| Database queries for the project list, 5 projects | 10 and growing | 6, flat |
+
+### What I skipped or left for later
+
+- Web Push notifications on phones (bell and email for now).
+- A dark mode switch; dark mode follows the system setting.
+- Reordering cards inside one column (needs a saved position on tasks).
+- Editing one occurrence of a repeating busy time (only the whole series).
+- A "pending review" step before a project counts as completed.
+- Server side logout (tokens are dropped from the browser; a stolen refresh token stays valid until it expires).
+- Refreshing the older notes in `docs/`; the README says the code is the source of truth.
+- Nothing was deployed, as you asked.
+
+### Decisions to double check
+
+1. **Tokens in localStorage** rather than cookies (explained in DEPLOY.md). Fine for a student app; revisit if this ever holds sensitive data.
+2. **One gunicorn process** so the in-memory rate limits stay exact. Needs Redis if you scale up.
+3. **Production defaults to Resend and Supabase** and refuses to start without their settings. Set `EMAIL_BACKEND=console` or `STORAGE_BACKEND=local` on Render only for a quick test, since local files vanish on every deploy.
+4. **The digest runs at 12:00 UTC.** Change the cron line if most users are in one time zone.
+5. **The creator can complete a project with tasks still open** (after a confirm), and anyone can once all tasks are done.
+6. **Render free Postgres expires** after a limited time. Check their current limits before relying on it.
 
 ---
 
@@ -383,8 +436,8 @@ Phase 1 (needed before I start):
 6. Rename "AI Task Generation" in the UI to "Suggested tasks"?
 
 Later (I will ask again when we get there):
-7. Email provider for production (Resend, Postmark, or something else) and how to trigger the daily digest (Render cron or GitHub Actions).
-8. File storage for production (Cloudflare R2 suggested).
+7. (Answered: Resend, GitHub Actions.) Email provider for production (Resend, Postmark, or something else) and how to trigger the daily digest (Render cron or GitHub Actions).
+8. (Answered: Supabase Storage.) File storage for production (Cloudflare R2 suggested).
 9. Delete the Google Drive stub?
 10. Recurring blocks: whole-series edits only, or also "skip one occurrence"?
 11. Comments: only the author can delete, or project admins too?
