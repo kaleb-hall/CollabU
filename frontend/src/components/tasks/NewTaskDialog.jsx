@@ -11,6 +11,7 @@ import { useCreateTaskIn } from '../../hooks/useTasks';
 import { fromInputValue } from '../../lib/dates';
 import { getErrorMessage } from '../../lib/errors';
 import { projectColor } from '../../lib/projectColor';
+import { isArchived } from '../../lib/completion';
 
 // Tasks are due at 17:00 local time on the chosen day
 const DUE_TIME = '17:00';
@@ -25,7 +26,8 @@ export default function NewTaskDialog({ open, onOpenChange, projectId }) {
 
 function NewTaskForm({ defaultProjectId, onDone }) {
   const { user } = useAuth();
-  const projects = (useProjects().data ?? []).filter((project) => project.status === 'active');
+  // New tasks only go to projects that are open for changes
+  const projects = (useProjects().data ?? []).filter((project) => !isArchived(project) && !project.locked);
   const createTask = useCreateTaskIn();
   const [form, setForm] = useState({
     title: '',

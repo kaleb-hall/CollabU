@@ -28,8 +28,8 @@ const DROP_EASING = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const LANDING_TIMEOUT_MS = 600;
 
 // The kanban board: drag cards between columns (mouse, touch or keyboard),
-// or use each card's menu. Cards glide to their new column.
-export default function Board({ projectId, tasks, onOpenTask }) {
+// or use each card's menu. Cards glide to their new column. A locked board is look only.
+export default function Board({ projectId, tasks, onOpenTask, locked = false }) {
   const queryClient = useQueryClient();
   const moveTask = useMoveTask(projectId);
   const [dragging, setDragging] = useState(null);
@@ -106,7 +106,7 @@ export default function Board({ projectId, tasks, onOpenTask }) {
           <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0">
             {STATUSES.map((status) => (
               <Column key={status.value} status={status} tasks={byStatus(status.value)}
-                onOpenTask={onOpenTask} onMove={moveFromMenu} draggingId={dragging?.id} droppedId={droppedId}
+                onOpenTask={onOpenTask} onMove={locked ? undefined : moveFromMenu} locked={locked} draggingId={dragging?.id} droppedId={droppedId}
                 landing={landing} onLanded={landed} />
             ))}
           </div>
@@ -120,7 +120,7 @@ export default function Board({ projectId, tasks, onOpenTask }) {
   );
 }
 
-function Column({ status, tasks, onOpenTask, onMove, draggingId, droppedId, landing, onLanded }) {
+function Column({ status, tasks, onOpenTask, onMove, locked, draggingId, droppedId, landing, onLanded }) {
   const { setNodeRef, isOver } = useDroppable({ id: status.value });
   return (
     <section
@@ -144,6 +144,7 @@ function Column({ status, tasks, onOpenTask, onMove, draggingId, droppedId, land
             task={task}
             onOpen={onOpenTask}
             onMove={onMove}
+            locked={locked}
             // Hidden while lifted, and in its old column while it is landing in the new one
             hidden={draggingId === task.id || (landing?.taskId === task.id && landing.status !== task.status)}
             glide={droppedId !== task.id}
@@ -161,8 +162,8 @@ function Column({ status, tasks, onOpenTask, onMove, draggingId, droppedId, land
   );
 }
 
-function DraggableCard({ task, onOpen, onMove, hidden, glide, landingFrom, onLanded }) {
-  const { attributes, listeners, setNodeRef } = useDraggable({ id: task.id });
+function DraggableCard({ task, onOpen, onMove, locked, hidden, glide, landingFrom, onLanded }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id: task.id, disabled: locked });
   const node = useRef(null);
   useLanding(node, landingFrom, onLanded);
   return (
@@ -178,7 +179,7 @@ function DraggableCard({ task, onOpen, onMove, hidden, glide, landingFrom, onLan
         task={task}
         onOpen={onOpen}
         onMove={onMove}
-        dragHandle={{ ...attributes, ...listeners, 'aria-roledescription': 'task card' }}
+        dragHandle={locked ? undefined : { ...attributes, ...listeners, 'aria-roledescription': 'task card' }}
       />
     </MotionLi>
   );

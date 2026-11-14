@@ -10,7 +10,7 @@ import { ALLOWED_EXTENSIONS, checkFile, formatSize } from '../../lib/files';
 
 // Files on a project, or on one task when taskId is given.
 // Only the uploader or the project owner (ownerId) can delete.
-export default function FileAttachments({ projectId, taskId, ownerId }) {
+export default function FileAttachments({ projectId, taskId, ownerId, locked = false }) {
   const { user } = useAuth();
   const files = useFiles(projectId, taskId);
   const upload = useUploadFile(projectId, taskId);
@@ -36,12 +36,13 @@ export default function FileAttachments({ projectId, taskId, ownerId }) {
     fileService.download(file).catch((error) => toast.error(getErrorMessage(error, 'Could not download the file')));
   };
 
-  const canDelete = (file) => user && (file.uploader.id === user.id || ownerId === user.id);
+  const canDelete = (file) => !locked && user && (file.uploader.id === user.id || ownerId === user.id);
 
   return (
     <section aria-label="Files" className="rounded-card border border-line bg-card">
       <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
         <h3 className="font-semibold text-ink">Files</h3>
+        {!locked && (<>
         <label htmlFor={inputId} className="inline-flex cursor-pointer items-center gap-1.5 font-semibold text-ink-soft hover:text-ink">
           <Paperclip size={16} aria-hidden="true" />
           {upload.isPending ? 'Uploading...' : 'Attach a file'}
@@ -54,6 +55,7 @@ export default function FileAttachments({ projectId, taskId, ownerId }) {
           onChange={onPick}
           disabled={upload.isPending}
         />
+        </>)}
       </div>
       {files.isPending && <div className="space-y-2 p-4"><Skeleton className="h-8" /><Skeleton className="h-8" /></div>}
       {files.isError && <p className="px-4 py-3 text-accent">{getErrorMessage(files.error)}</p>}

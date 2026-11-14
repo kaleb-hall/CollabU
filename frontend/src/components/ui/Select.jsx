@@ -3,14 +3,14 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import { CaretUpDown, Check } from '@phosphor-icons/react';
 
 // A labelled dropdown. options: [{ value, label, dot? }]
-export default function Select({ label, value, onChange, options, placeholder = 'Choose one' }) {
+export default function Select({ label, value, onChange, options, placeholder = 'Choose one', disabled = false }) {
   const id = useId();
   const items = Object.fromEntries(options.map((option) => [option.value, option.label]));
 
   return (
     <div>
       <span id={id} className="mb-1.5 block text-sm font-semibold text-ink">{label}</span>
-      <BaseSelect.Root value={value} onValueChange={onChange} items={items}>
+      <BaseSelect.Root value={value} onValueChange={onChange} items={items} disabled={disabled}>
         <BaseSelect.Trigger
           aria-labelledby={id}
           className="flex h-9 w-full items-center justify-between gap-2 rounded-card border border-line bg-card px-3 text-left text-ink hover:border-ink-faint"

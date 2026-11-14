@@ -3,13 +3,14 @@ import { Tooltip } from '@base-ui/react/tooltip';
 import { Plus } from '@phosphor-icons/react';
 import Skeleton from '../ui/Skeleton';
 import { useProjects } from '../../hooks/useProjects';
+import { isArchived } from '../../lib/completion';
 import { projectColor } from '../../lib/projectColor';
 import { cx } from '../../lib/cx';
 
 // The project list in the sidebar and the phone drawer. Collapsed, it shows dots with tooltips.
 export default function ProjectNav({ collapsed = false, onNewProject, onNavigate }) {
   const projects = useProjects();
-  const active = (projects.data ?? []).filter((project) => project.status === 'active');
+  const active = (projects.data ?? []).filter((project) => !isArchived(project));
 
   return (
     <div>

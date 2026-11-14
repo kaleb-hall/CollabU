@@ -38,6 +38,14 @@
   --dot-4: #6A5590;
   --dot-5: #2F7C80;
   --dot-6: #8A5A6E;
+
+  /* Paper confetti for finishing a project: the one loud moment in the app */
+  --confetti-1: #F2B33D;  /* marigold */
+  --confetti-2: #E4572E;  /* tomato */
+  --confetti-3: #3E8ED0;  /* sky */
+  --confetti-4: #4DAA7A;  /* mint */
+  --confetti-5: #E86FA6;  /* bubblegum */
+  --confetti-6: #8C6BD6;  /* lilac */
   --elev-card: 0 1px 0 rgb(28 42 68 / 0.06), 0 2px 6px rgb(28 42 68 / 0.06);
   --elev-lift: 0 10px 24px rgb(28 42 68 / 0.14), 0 2px 6px rgb(28 42 68 / 0.08);
 }
@@ -75,6 +83,13 @@
     --dot-4: #C7B6E6;
     --dot-5: #8FD3D1;
     --dot-6: #E3AFC4;
+
+    --confetti-1: #FFC857;
+    --confetti-2: #FF7A59;
+    --confetti-3: #6CB4F0;
+    --confetti-4: #6FD39E;
+    --confetti-5: #FF8FC4;
+    --confetti-6: #B49CFF;
     --elev-card: 0 1px 0 rgb(0 0 0 / 0.25), 0 2px 6px rgb(0 0 0 / 0.25);
     --elev-lift: 0 12px 28px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
   }

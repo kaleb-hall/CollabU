@@ -17,13 +17,14 @@ const PRIORITIES = ['low', 'medium', 'high', 'urgent'].map((value) => ({ value, 
 const NOBODY = 'nobody';
 
 // Everything about one task in a side panel: edit it, attach files, talk about it
-export default function TaskPanel({ task, members, ownerId, open, onOpenChange }) {
+// A locked project shows the task read only; comments and downloads still work.
+export default function TaskPanel({ task, members, ownerId, open, onOpenChange, locked = false }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title="Task">
       {task && (
         <div className="space-y-6">
-          <TaskForm key={task.id} task={task} members={members} onDeleted={() => onOpenChange(false)} />
-          <FileAttachments projectId={task.project_id} taskId={task.id} ownerId={ownerId} />
+          <TaskForm key={task.id} task={task} members={members} locked={locked} onDeleted={() => onOpenChange(false)} />
+          <FileAttachments projectId={task.project_id} taskId={task.id} ownerId={ownerId} locked={locked} />
           <TaskComments taskId={task.id} projectId={task.project_id} />
         </div>
       )}
@@ -31,7 +32,7 @@ export default function TaskPanel({ task, members, ownerId, open, onOpenChange }
   );
 }
 
-function TaskForm({ task, members, onDeleted }) {
+function TaskForm({ task, members, locked, onDeleted }) {
   const update = useUpdateTask(task.project_id);
   const remove = useDeleteTask(task.project_id);
   const [form, setForm] = useState({
@@ -72,14 +73,16 @@ function TaskForm({ task, members, onDeleted }) {
 
   return (
     <form onSubmit={save} className="space-y-4">
+      <fieldset disabled={locked} className="space-y-4">
       <Field label="Title" required maxLength={200} value={form.title} onChange={set('title')} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label="Status" value={form.status} onChange={set('status')} options={STATUSES} />
-        <Select label="Priority" value={form.priority} onChange={set('priority')} options={PRIORITIES} />
+        <Select label="Status" value={form.status} onChange={set('status')} options={STATUSES} disabled={locked} />
+        <Select label="Priority" value={form.priority} onChange={set('priority')} options={PRIORITIES} disabled={locked} />
         <Select
           label="Assignee"
           value={form.assigned_to}
           onChange={set('assigned_to')}
+          disabled={locked}
           options={[{ value: NOBODY, label: 'Nobody yet' }, ...members.map((m) => ({ value: m.user_id, label: m.user.full_name }))]}
         />
         <Field label="Estimate (hours)" type="number" min="0.25" step="0.25" value={form.estimated_hours}
@@ -87,6 +90,10 @@ function TaskForm({ task, members, onDeleted }) {
       </div>
       <Field label="Due" type="datetime-local" required value={form.due_date} inputClassName="font-mono" onChange={set('due_date')} />
       <Field label="Notes" as="textarea" rows={3} value={form.description} onChange={set('description')} />
+      </fieldset>
+      {locked ? (
+        <p className="text-sm text-ink-soft">This project is locked, so tasks cannot be changed. You can still comment.</p>
+      ) : (
       <div className="flex items-center justify-between gap-2">
         <ConfirmDialog
           trigger={(
@@ -103,6 +110,7 @@ function TaskForm({ task, members, onDeleted }) {
           {update.isPending ? 'Saving...' : 'Save changes'}
         </Button>
       </div>
+      )}
     </form>
   );
 }

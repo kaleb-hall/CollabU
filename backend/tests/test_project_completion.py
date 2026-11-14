@@ -43,6 +43,14 @@ def test_member_cannot_complete_while_tasks_are_open(client):
     assert 'tasks are done' in response.get_json()['error']['message']
 
 
+def test_member_cannot_complete_an_empty_project(client):
+    project, _, (_, member_headers) = setup_team(client)
+
+    response = client.post(f"/api/projects/{project['id']}/complete", headers=member_headers)
+
+    assert response.status_code == 403
+
+
 def test_member_can_complete_once_every_task_is_done(client):
     project, (_, owner_headers), (_, member_headers) = setup_team(client)
     task = create_task(client, owner_headers, project['id'])

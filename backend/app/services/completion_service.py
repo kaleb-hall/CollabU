@@ -13,15 +13,16 @@ def is_admin(project, user_id):
     return bool(member and member.role == 'admin')
 
 
-def open_task_count(project):
-    return Task.query.filter(Task.project_id == project.id, Task.status != 'completed').count()
+def all_tasks_done(project):
+    tasks = Task.query.filter_by(project_id=project.id)
+    return tasks.count() > 0 and tasks.filter(Task.status != 'completed').count() == 0
 
 
 def complete(project, user_id):
-    """The creator can finish at any time; anyone else once every task is done."""
+    """The creator can finish at any time; anyone else once every task is done (and there is at least one)."""
     if project.status == 'completed':
         raise Conflict('This project is already completed')
-    if user_id != project.created_by and open_task_count(project):
+    if user_id != project.created_by and not all_tasks_done(project):
         raise Forbidden('You can complete the project once all tasks are done')
 
     project.status = 'completed'

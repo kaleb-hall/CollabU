@@ -141,14 +141,15 @@ describe('Home', () => {
   })
 
   it('lists projects compactly with progress and deadline', async () => {
-    setup({ projects: [project(), project({ id: 2, title: 'Chem lab', deadline: inDays(2) }), project({ id: 3, title: 'Old', status: 'archived' })] })
+    setup({ projects: [project(), project({ id: 2, title: 'Chem lab', deadline: inDays(2) }), project({ id: 3, title: 'Old', archived_at: inDays(-5) })] })
     const list = await screen.findByRole('region', { name: 'Projects' })
     const essayRow = within(list).getByRole('link', { name: /History essay/ })
     expect(essayRow).toHaveAttribute('href', '/projects/1')
     expect(essayRow).toHaveTextContent('2/5')
     expect(essayRow).toHaveTextContent('20 days left')
     expect(within(list).getByText('2 days left').closest('[data-urgent]')).toHaveAttribute('data-urgent', 'true')
-    expect(within(list).queryByText('Old')).not.toBeInTheDocument()
+    // Archived projects are folded away under Archived
+    expect(within(list).getByText('Old').closest('details')).toHaveTextContent('Archived')
   })
 
   it('invites you to start a project when there are none', async () => {

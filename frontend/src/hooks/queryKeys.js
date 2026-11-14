@@ -11,6 +11,7 @@ export const queryKeys = {
   workload: (projectId) => ['workload', Number(projectId)],
   me: ['me'],
   activity: (projectId) => ['activity', Number(projectId)],
+  summary: (projectId) => ['summary', Number(projectId)],
   notifications: ['notifications'],
   unreadCount: ['notifications', 'unread'],
   notificationList: ['notifications', 'list'],

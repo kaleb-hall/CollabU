@@ -54,3 +54,41 @@ export function useRemoveMember(projectId) {
     ]),
   })
 }
+
+export function useProjectSummary(projectId, enabled) {
+  return useQuery({
+    queryKey: queryKeys.summary(projectId),
+    queryFn: () => projectService.getSummary(projectId),
+    enabled,
+  })
+}
+
+// Complete, reopen, lock, archive and the final note all answer with the updated project
+function useProjectChange(projectId, change) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: change,
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.project(projectId), data)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects, exact: true }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.summary(projectId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.activity(projectId) }),
+      ])
+    },
+  })
+}
+
+export const useCompleteProject = (projectId) => useProjectChange(projectId, () => projectService.complete(projectId))
+export const useReopenProject = (projectId) => useProjectChange(projectId, () => projectService.reopen(projectId))
+export const useSetLocked = (projectId) => useProjectChange(projectId, (locked) => projectService.setLocked(projectId, locked))
+export const useSetArchived = (projectId) => useProjectChange(projectId, (archived) => projectService.setArchived(projectId, archived))
+export const useSendFinalNote = (projectId) => useProjectChange(projectId, (message) => projectService.sendFinalNote(projectId, message))
+
+export function useUpdateMySettings(projectId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings) => projectService.updateMySettings(projectId, settings),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) }),
+  })
+}

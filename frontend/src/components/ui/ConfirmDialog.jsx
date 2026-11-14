@@ -1,8 +1,8 @@
 import { AlertDialog } from '@base-ui/react/alert-dialog';
 import Button from './Button';
 
-// Asks before something that cannot be undone. `trigger` is the button that opens it.
-export default function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm }) {
+// Asks before something big or that cannot be undone. `trigger` is the button that opens it.
+export default function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm, confirmVariant = 'danger' }) {
   return (
     <AlertDialog.Root>
       <AlertDialog.Trigger render={trigger} />
@@ -13,7 +13,7 @@ export default function ConfirmDialog({ trigger, title, description, confirmLabe
           <AlertDialog.Description className="mt-2 text-ink-soft">{description}</AlertDialog.Description>
           <div className="mt-6 flex justify-end gap-2">
             <AlertDialog.Close render={<Button variant="secondary">Cancel</Button>} />
-            <AlertDialog.Close render={<Button variant="danger" onClick={onConfirm}>{confirmLabel}</Button>} />
+            <AlertDialog.Close render={<Button variant={confirmVariant} onClick={onConfirm}>{confirmLabel}</Button>} />
           </div>
         </AlertDialog.Popup>
       </AlertDialog.Portal>

@@ -7,6 +7,7 @@ import ProjectList from '../components/home/ProjectList';
 import { useProjects } from '../hooks/useProjects';
 import { useMyTasks } from '../hooks/useTasks';
 import { isUrgent } from '../lib/urgency';
+import { isArchived } from '../lib/completion';
 
 // Home: my work first, projects beside it. Like Jira's "For you" or Google Tasks.
 export default function Dashboard() {
@@ -33,7 +34,8 @@ function HomeContent() {
   }
   if (projectsQuery.isPending || tasksQuery.isPending) return <HomeSkeleton />;
 
-  const projects = projectsQuery.data.filter((project) => project.status === 'active');
+  const projects = projectsQuery.data.filter((project) => !isArchived(project));
+  const archived = projectsQuery.data.filter(isArchived);
   const open = tasksQuery.data.filter((task) => task.status !== 'completed');
   const late = open.filter((task) => isUrgent(task.due_date, -1)).length;
 
@@ -50,7 +52,7 @@ function HomeContent() {
       </header>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <MyWork tasks={tasksQuery.data} />
-        <div><ProjectList projects={projects} /></div>
+        <div><ProjectList projects={projects} archived={archived} /></div>
       </div>
     </>
   );

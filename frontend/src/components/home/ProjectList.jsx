@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Notebook } from '@phosphor-icons/react';
+import { CaretRight, Notebook, SealCheck } from '@phosphor-icons/react';
 import Button from '../ui/Button';
 import { useAppActions } from '../../hooks/useAppActions';
 import { formatShortDate } from '../../lib/dates';
@@ -9,8 +9,9 @@ import { cx } from '../../lib/cx';
 
 const URGENT_WITHIN_DAYS = 3;
 
-// Every active project as one compact row: progress and deadline at a glance
-export default function ProjectList({ projects }) {
+// Every project as one compact row: progress and deadline at a glance.
+// Archived ones sit folded away at the bottom.
+export default function ProjectList({ projects, archived = [] }) {
   const { openNewProject } = useAppActions();
 
   return (
@@ -31,13 +32,25 @@ export default function ProjectList({ projects }) {
           {projects.map((project) => <ProjectRow key={project.id} project={project} />)}
         </ul>
       )}
+      {archived.length > 0 && (
+        <details className="group border-t border-line">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm font-semibold text-ink-soft hover:bg-paper hover:text-ink [&::-webkit-details-marker]:hidden">
+            <CaretRight size={12} weight="bold" className="transition-transform group-open:rotate-90" aria-hidden="true" />
+            Archived
+            <span className="ml-auto font-mono text-xs text-ink-faint">{archived.length}</span>
+          </summary>
+          <ul className="border-t border-line">
+            {archived.map((project) => <ProjectRow key={project.id} project={project} />)}
+          </ul>
+        </details>
+      )}
     </section>
   );
 }
 
 function ProjectRow({ project }) {
   const { total, completed } = project.task_counts;
-  const urgent = isUrgent(project.deadline, URGENT_WITHIN_DAYS);
+  const urgent = project.status !== 'completed' && isUrgent(project.deadline, URGENT_WITHIN_DAYS);
   return (
     <li className="border-b border-line last:border-b-0">
       <Link to={`/projects/${project.id}`} className="block px-4 py-3 hover:bg-paper">
@@ -53,9 +66,15 @@ function ProjectRow({ project }) {
             <div className="h-full rounded-full bg-status-done" style={{ width: `${total ? (completed / total) * 100 : 0}%` }} />
           </div>
           <span className="font-mono text-xs text-ink-faint">{completed}/{total}</span>
-          <span data-urgent={urgent} className={cx('w-24 text-right text-xs', urgent ? 'font-semibold text-accent' : 'text-ink-faint')}>
-            {deadlineLabel(project.deadline)}
-          </span>
+          {project.status === 'completed' ? (
+            <span className="flex w-24 items-center justify-end gap-1 text-xs font-semibold text-status-done">
+              <SealCheck size={14} weight="bold" aria-hidden="true" />Completed
+            </span>
+          ) : (
+            <span data-urgent={urgent} className={cx('w-24 text-right text-xs', urgent ? 'font-semibold text-accent' : 'text-ink-faint')}>
+              {deadlineLabel(project.deadline)}
+            </span>
+          )}
         </div>
       </Link>
     </li>

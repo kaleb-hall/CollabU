@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tabs } from '@base-ui/react/tabs';
 import { toast } from 'sonner';
 import AppShell from '../components/layout/AppShell';
 import ActivityFeed from '../components/project/ActivityFeed';
+import AllDoneStrip from '../components/project/AllDoneStrip';
 import Board from '../components/project/Board';
+import CompletionSummary from '../components/project/CompletionSummary';
 import FileAttachments from '../components/project/FileAttachments';
 import InviteMemberModal from '../components/project/InviteMemberModal';
 import ProjectHeader from '../components/project/ProjectHeader';
@@ -15,10 +17,14 @@ import ErrorState from '../components/ui/ErrorState';
 import Skeleton from '../components/ui/Skeleton';
 import { useAppActions } from '../hooks/useAppActions';
 import { useAuth } from '../hooks/useAuth';
-import { useProject } from '../hooks/useProjects';
+import { useCompleteProject, useProject } from '../hooks/useProjects';
 import { useCalculateSchedule, useProjectTasks } from '../hooks/useTasks';
+import { allTasksDone, canComplete, timeTaken } from '../lib/completion';
 import { userTimeZone } from '../lib/dates';
 import { getErrorMessage } from '../lib/errors';
+
+// Loaded the first time someone finishes a project
+const Celebration = lazy(() => import('../components/project/Celebration'));
 
 const TABS = [
   ['board', 'Board'],
@@ -45,6 +51,9 @@ function ProjectPage() {
   const schedule = useCalculateSchedule(id);
   const [openTaskId, setOpenTaskId] = useState(null);
   const [inviting, setInviting] = useState(false);
+  const complete = useCompleteProject(id);
+  // What the celebration shows, kept after the project data changes underneath it
+  const [celebrating, setCelebrating] = useState(null);
 
   const error = projectQuery.error || tasksQuery.error;
   if (error) {
@@ -54,7 +63,18 @@ function ProjectPage() {
 
   const project = projectQuery.data;
   const tasks = tasksQuery.data;
-  const isAdmin = project.members.some((m) => m.user_id === user.id && m.role === 'admin');
+  const me = project.members.find((m) => m.user_id === user.id);
+  const isAdmin = me?.role === 'admin';
+  const finished = project.status === 'completed';
+  const mayComplete = canComplete(project, tasks, user.id);
+
+  const finish = () => complete.mutate(undefined, {
+    onSuccess: ({ project: done }) => setCelebrating({
+      project: done,
+      stats: { done: tasks.filter((task) => task.status === 'completed').length, took: timeTaken(done.created_at, done.completed_at) },
+    }),
+    onError: (completeError) => toast.error(getErrorMessage(completeError, 'Could not complete the project')),
+  });
 
   const plan = () => schedule.mutate(userTimeZone(), {
     onSuccess: (result) => {
@@ -66,7 +86,13 @@ function ProjectPage() {
 
   return (
     <>
-      <ProjectHeader project={project} tasks={tasks} onAddTask={() => openNewTask(project.id)} onPlan={plan} planning={schedule.isPending} />
+      <ProjectHeader
+        project={project} tasks={tasks} me={me} isAdmin={isAdmin}
+        canComplete={mayComplete} onComplete={finish} completing={complete.isPending}
+        onAddTask={() => openNewTask(project.id)} onPlan={plan} planning={schedule.isPending}
+      />
+      {finished && <CompletionSummary project={project} />}
+      {!finished && allTasksDone(tasks) && mayComplete && <AllDoneStrip onComplete={finish} completing={complete.isPending} />}
       <Tabs.Root defaultValue="board">
         <Tabs.List className="relative mb-5 flex gap-1 overflow-x-auto border-b border-line">
           {TABS.map(([value, label]) => (
@@ -81,13 +107,13 @@ function ProjectPage() {
           <Tabs.Indicator className="absolute bottom-0 left-[var(--active-tab-left)] h-0.5 w-[var(--active-tab-width)] bg-ink transition-all duration-200" />
         </Tabs.List>
         <Tabs.Panel value="board">
-          <Board projectId={project.id} tasks={tasks} onOpenTask={(task) => setOpenTaskId(task.id)} />
+          <Board projectId={project.id} tasks={tasks} locked={project.locked} onOpenTask={(task) => setOpenTaskId(task.id)} />
         </Tabs.Panel>
         <Tabs.Panel value="workload"><WorkloadView projectId={project.id} /></Tabs.Panel>
         <Tabs.Panel value="activity"><ActivityFeed projectId={project.id} /></Tabs.Panel>
-        <Tabs.Panel value="files"><FileAttachments projectId={project.id} ownerId={project.created_by} /></Tabs.Panel>
+        <Tabs.Panel value="files"><FileAttachments projectId={project.id} ownerId={project.created_by} locked={project.locked} /></Tabs.Panel>
         <Tabs.Panel value="team">
-          <TeamPanel project={project} isAdmin={isAdmin} currentUserId={user.id} onInvite={() => setInviting(true)} />
+          <TeamPanel project={project} isAdmin={isAdmin && !project.locked} currentUserId={user.id} onInvite={() => setInviting(true)} />
         </Tabs.Panel>
       </Tabs.Root>
 
@@ -95,10 +121,16 @@ function ProjectPage() {
         task={tasks.find((task) => task.id === openTaskId)}
         members={project.members}
         ownerId={project.created_by}
+        locked={project.locked}
         open={openTaskId !== null}
         onOpenChange={(open) => { if (!open) setOpenTaskId(null); }}
       />
       <InviteMemberModal projectId={project.id} open={inviting} onOpenChange={setInviting} />
+      {celebrating && (
+        <Suspense fallback={null}>
+          <Celebration project={celebrating.project} stats={celebrating.stats} open onClose={() => setCelebrating(null)} />
+        </Suspense>
+      )}
     </>
   );
 }

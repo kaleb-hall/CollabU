@@ -16,7 +16,7 @@ vi.mock('../../services/taskService', () => ({ taskService: { createTask: vi.fn(
 const projects = [
   { id: 1, title: 'History essay', status: 'active', task_counts: { total: 5, completed: 2 } },
   { id: 2, title: 'Chem lab', status: 'active', task_counts: { total: 3, completed: 3 } },
-  { id: 3, title: 'Old thing', status: 'archived', task_counts: { total: 1, completed: 0 } },
+  { id: 3, title: 'Old thing', status: 'completed', archived_at: '2026-10-01T00:00:00Z', task_counts: { total: 1, completed: 0 } },
 ]
 
 function setup() {

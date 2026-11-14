@@ -5,6 +5,7 @@ import { CalendarBlank, CheckSquareOffset, FolderSimplePlus, GearSix, House, Mag
 import { useProjects } from '../../hooks/useProjects';
 import { modKey } from '../../lib/platform';
 import { projectColor } from '../../lib/projectColor';
+import { isArchived } from '../../lib/completion';
 
 const ITEM = 'flex cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-ink data-[selected=true]:bg-paper-deep';
 const GROUP = '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-ink-faint';
@@ -24,7 +25,7 @@ export default function SearchBar({ focusRequest, onNewTask, onNewProject, onDon
   const inputRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const projects = (useProjects().data ?? []).filter((project) => project.status === 'active');
+  const projects = useProjects().data ?? [];
 
   // Focusing the box opens the results (see onFocus below)
   useEffect(() => {
@@ -78,7 +79,8 @@ export default function SearchBar({ focusRequest, onNewTask, onNewProject, onDon
                 {projects.map((project) => (
                   <Command.Item key={project.id} value={`project ${project.title}`} onSelect={() => run(() => navigate(`/projects/${project.id}`))} className={ITEM}>
                     <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: projectColor(project.id) }} />
-                    {project.title}
+                    <span className="min-w-0 flex-1 truncate">{project.title}</span>
+                    {isArchived(project) && <span className="text-xs text-ink-faint">Archived</span>}
                   </Command.Item>
                 ))}
               </Command.Group>
