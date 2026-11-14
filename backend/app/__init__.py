@@ -38,6 +38,7 @@ def register_blueprints(app):
     from app.controllers.auth_controller import auth_bp
     from app.controllers.calendar_controller import calendar_bp
     from app.controllers.comment_controller import comment_bp
+    from app.controllers.digest_controller import digest_bp
     from app.controllers.file_controller import file_bp
     from app.controllers.invite_controller import invite_bp
     from app.controllers.notification_controller import notification_bp
@@ -54,6 +55,7 @@ def register_blueprints(app):
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(invite_bp, url_prefix='/api')
     app.register_blueprint(file_bp, url_prefix='/api')
+    app.register_blueprint(digest_bp, url_prefix='/api')
 
     @app.get('/api/health')
     def health():

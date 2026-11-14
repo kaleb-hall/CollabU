@@ -1,0 +1,25 @@
+# Once a day, ask the API to email everyone their tasks due in the next 24 hours.
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   COLLABU_API_URL  for example https://collabu-api.onrender.com/api
+#   DIGEST_TOKEN     the same value as DIGEST_TOKEN on Render
+name: Daily digest
+
+on:
+  schedule:
+    - cron: "0 12 * * *"  # 12:00 UTC: morning in the Americas, evening in Europe
+  workflow_dispatch:      # also lets you run it by hand from the Actions tab
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the API (free Render servers sleep when idle)
+        run: curl --silent --show-error --retry 5 --retry-delay 10 --retry-all-errors --max-time 90 "$API_URL/health"
+        env:
+          API_URL: ${{ secrets.COLLABU_API_URL }}
+      - name: Send the digest
+        run: |
+          curl --fail --silent --show-error --max-time 90 -X POST "$API_URL/digest" -H "X-Digest-Token: $DIGEST_TOKEN"
+        env:
+          API_URL: ${{ secrets.COLLABU_API_URL }}
+          DIGEST_TOKEN: ${{ secrets.DIGEST_TOKEN }}
