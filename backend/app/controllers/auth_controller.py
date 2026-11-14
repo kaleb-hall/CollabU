@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 
 from app import db
-from app.errors import NotFound
+from app.errors import NotFound, Unauthorized
 from app.models import User
 from app.security import limiter
 from app.schemas.user_schema import MeSchema, UserLoginSchema, UserRegisterSchema
@@ -16,7 +16,11 @@ user_schema = MeSchema()
 
 
 def auth_response(user, status):
-    return jsonify({'user': user_schema.dump(user), 'access_token': auth_service.access_token_for(user)}), status
+    return jsonify({
+        'user': user_schema.dump(user),
+        'access_token': auth_service.access_token_for(user),
+        'refresh_token': auth_service.refresh_token_for(user),
+    }), status
 
 
 @auth_bp.route('/register', methods=['POST'])
@@ -31,6 +35,16 @@ def register():
 def login():
     data = load_json(UserLoginSchema())
     return auth_response(auth_service.authenticate(data['email'], data['password'], data['timezone']), 200)
+
+
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    """Trade the long-lived refresh token for a new short-lived access token."""
+    user = db.session.get(User, current_user_id())
+    if not user or not user.is_active:
+        raise Unauthorized('Please log in again')
+    return jsonify({'access_token': auth_service.access_token_for(user)}), 200
 
 
 @auth_bp.route('/me', methods=['GET'])

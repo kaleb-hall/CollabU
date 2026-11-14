@@ -106,7 +106,9 @@ def register_error_handlers(app, jwt):
 
     jwt.unauthorized_loader(lambda reason: unauthorized('Please log in'))
     jwt.invalid_token_loader(lambda reason: unauthorized('Your session is invalid, please log in again'))
-    jwt.expired_token_loader(lambda header, payload: unauthorized('Your session expired, please log in again'))
+    # The frontend sees TOKEN_EXPIRED, refreshes once and retries the request
+    jwt.expired_token_loader(
+        lambda header, payload: error_response(401, 'TOKEN_EXPIRED', 'Your session expired, please log in again'))
     jwt.user_lookup_error_loader(lambda header, payload: unauthorized('Your account no longer exists'))
 
 

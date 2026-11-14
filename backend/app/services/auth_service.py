@@ -1,4 +1,4 @@
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, create_refresh_token
 
 from app import db
 from app.errors import Conflict, Unauthorized
@@ -40,3 +40,7 @@ def authenticate(email, password, timezone_name=None):
 
 def access_token_for(user):
     return create_access_token(identity=str(user.id))
+
+
+def refresh_token_for(user):
+    return create_refresh_token(identity=str(user.id))
