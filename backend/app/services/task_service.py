@@ -4,7 +4,7 @@ from app import db
 from app.errors import ValidationFailed
 from app.models import File, ProjectMember, Task, User
 from app.schemas.task_schema import STATUS_LABELS
-from app.services import activity_service, notification_service
+from app.services import activity_service, notification_service, project_updates
 from app.utils.time import utcnow
 
 
@@ -62,6 +62,19 @@ def on_status_changed(task, actor_id):
     if task.status == 'review' and task.created_by and task.created_by != actor_id:
         notification_service.notify(task.created_by, 'review', f'"{task.title}" is ready for review',
                                     link=notification_service.project_link(task.project_id))
+    if task.status == 'completed' and task.assigned_to and not has_open_tasks(task.project_id, task.assigned_to):
+        assignee = db.session.get(User, task.assigned_to)
+        project_updates.announce(
+            task.project,
+            f'{activity_service.full_name(assignee)} finished all their tasks in {task.project.title}',
+            skip={actor_id, task.assigned_to},
+        )
+
+
+def has_open_tasks(project_id, user_id):
+    return db.session.query(
+        Task.query.filter(Task.project_id == project_id, Task.assigned_to == user_id, Task.status != 'completed').exists()
+    ).scalar()
 
 
 def on_assigned(task, actor_id):

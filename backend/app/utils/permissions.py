@@ -3,7 +3,7 @@ from functools import wraps
 from flask_jwt_extended import jwt_required
 
 from app import db
-from app.errors import Forbidden, NotFound
+from app.errors import Forbidden, NotFound, ProjectLocked
 from app.models import File, Project, ProjectMember, Task
 from app.utils.auth import current_user_id
 
@@ -12,8 +12,10 @@ from app.utils.auth import current_user_id
 CHILD_MODELS = {'task': (Task, 'Task'), 'file': (File, 'File')}
 
 
-def project_access(admin=False):
+def project_access(admin=False, editable=False):
     """Require a logged-in project member (or admin) for the project in the URL.
+
+    editable=True also refuses the request while the project is locked.
 
     Routes with <project_id> receive `project` instead.
     Routes with <task_id> or <file_id> receive `task` or `file`, plus `project`.
@@ -44,6 +46,8 @@ def project_access(admin=False):
                 raise Forbidden('You are not a member of this project')
             if admin and membership.role != 'admin':
                 raise Forbidden('Only project admins can do this')
+            if editable and project.locked:
+                raise ProjectLocked()
 
             return route(*args, project=project, **kwargs)
         return wrapper

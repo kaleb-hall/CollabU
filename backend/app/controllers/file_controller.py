@@ -11,7 +11,7 @@ file_schema = FileSchema()
 
 
 @file_bp.route('/projects/<int:project_id>/files', methods=['POST'])
-@project_access()
+@project_access(editable=True)
 def upload_file(project):
     task_id = FileQuerySchema().load(request.form)['task_id']
     record = file_service.upload(project, request.files.get('file'), task_id, current_user_id())
@@ -39,7 +39,7 @@ def download_file(project, file):
 
 
 @file_bp.route('/files/<int:file_id>', methods=['DELETE'])
-@project_access()
+@project_access(editable=True)
 def delete_file(project, file):
     file_service.delete_file(project, file, current_user_id())
     return '', 204

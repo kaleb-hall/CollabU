@@ -58,3 +58,16 @@ def send_due_digests():
             'You can turn these emails off in your settings.',
         )
     return len(by_user)
+
+
+def send_project_update(user, project, title, message=None):
+    """One big update on a project (a member finishing, the project finishing, the final note)."""
+    body = f'Hi {user.first_name},\n\n{title}.\n\n'
+    if message:
+        body += f'{message}\n\n'
+    send_email(
+        user.email,
+        title,
+        body + f'Open the project: {app_url(f"/projects/{project.id}")}\n\n'
+        'You can turn these emails off on the project page or in your settings.',
+    )

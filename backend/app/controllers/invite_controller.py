@@ -13,7 +13,7 @@ invite_schema = InviteSchema()
 
 
 @invite_bp.route('/projects/<int:project_id>/invites', methods=['POST'])
-@project_access(admin=True)
+@project_access(admin=True, editable=True)
 def create_invite(project):
     data = load_json(InviteCreateSchema())
     invite = invite_service.create_invite(project, data['email'], data['role'], current_user_id())
@@ -27,7 +27,7 @@ def list_invites(project):
 
 
 @invite_bp.route('/projects/<int:project_id>/invites/<int:invite_id>', methods=['DELETE'])
-@project_access(admin=True)
+@project_access(admin=True, editable=True)
 def cancel_invite(project, invite_id):
     invite_service.cancel(project, invite_id)
     return '', 204

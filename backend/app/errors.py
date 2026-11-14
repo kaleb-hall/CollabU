@@ -48,6 +48,12 @@ class ValidationFailed(AppError):
     message = 'Some fields are invalid'
 
 
+class ProjectLocked(AppError):
+    status = 409
+    code = 'PROJECT_LOCKED'
+    message = 'This project is locked. Unlock it to make changes.'
+
+
 class Unauthorized(AppError):
     status = 401
     code = 'UNAUTHORIZED'

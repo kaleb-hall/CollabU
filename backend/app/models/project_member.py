@@ -16,6 +16,9 @@ class ProjectMember(db.Model):
     role = db.Column(db.String(20), default='member', nullable=False)
     # Role options: 'admin', 'member', 'viewer'
     
+    # Email me about big updates on this project (a member finishing, the project finishing)
+    email_updates = db.Column(db.Boolean, default=True, server_default=db.true(), nullable=False)
+
     # Timestamps
     joined_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     

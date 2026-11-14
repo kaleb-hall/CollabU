@@ -118,3 +118,10 @@ def remove_member(project, member_id):
         raise NotFound('Member not found')
     db.session.delete(member)
     db.session.commit()
+
+
+def update_member_settings(project, user_id, data):
+    member = ProjectMember.query.filter_by(project_id=project.id, user_id=user_id).one()
+    member.email_updates = data['email_updates']
+    db.session.commit()
+    return member
