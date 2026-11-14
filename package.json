@@ -1,0 +1,16 @@
+{
+  "name": "collabu",
+  "private": true,
+  "description": "Runs the Flask backend and the Vite frontend together for local development.",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "concurrently --names api,web --prefix-colors blue,magenta --kill-others-on-fail \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "cd backend && venv/bin/flask db upgrade && venv/bin/flask run --port 5000 --debug",
+    "dev:web": "npm --prefix frontend run dev",
+    "seed": "cd backend && venv/bin/flask seed",
+    "test": "cd backend && venv/bin/python -m pytest -q && cd ../frontend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

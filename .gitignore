@@ -19,3 +19,5 @@ instance/
 frontend/node_modules/
 frontend/build/
 frontend/dist/
+node_modules/
+backend/uploads/
